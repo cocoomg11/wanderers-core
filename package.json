@@ -1,0 +1,23 @@
+{
+  "name": "wanderers-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared core library for cocoomg11's Foundry VTT modules, vendored and pinned into each module (no runtime dependency).",
+  "license": "MIT",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "repository": { "type": "git", "url": "https://github.com/cocoomg11/wanderers-core.git" },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "check": "for f in src/*.mjs src/foundry/*.mjs tools/*.mjs tests/*.mjs config/*.mjs; do node --check \"$f\" || exit 1; done",
+    "lint": "eslint .",
+    "types": "tsc -p tsconfig.json",
+    "bundle": "node tools/vendor.mjs bundle --out dist",
+    "ci": "npm run check && npm run lint && npm run types && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "26.1.2",
+    "eslint": "10.1.0",
+    "typescript": "6.0.2"
+  }
+}

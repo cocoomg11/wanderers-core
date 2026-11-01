@@ -1,0 +1,6 @@
+{
+  "$comment": "Type-checks the library, the vendor tool and the shared config. Tests are left out on purpose: they feed wrong types to check refusals.",
+  "extends": "./config/tsconfig.base.json",
+  "compilerOptions": { "types": ["node"] },
+  "include": ["src/**/*.mjs", "tools/**/*.mjs", "config/*.mjs", "config/foundry-globals.d.ts"]
+}

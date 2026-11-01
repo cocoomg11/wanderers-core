@@ -18,7 +18,7 @@ const ID_RE = /^[A-Za-z][A-Za-z0-9_]*$/;
  * @property {string} [key]
  * @property {string[]} [needs] features this one only works with (checked by `isOn`)
  */
-/** @typedef {Required<Omit<FeatureInput, "needs">> & { needs: string[] }} Feature */
+/** @typedef {Readonly<Required<Omit<FeatureInput, "needs">> & { needs: readonly string[] }>} Feature */
 
 /**
  * Fills in the defaults and checks the list once. Throws on a programming mistake (duplicate id or key, a bad id, a need that

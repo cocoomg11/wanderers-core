@@ -17,7 +17,7 @@
 export function addCapped(list, entry, { max, key = "id" }) {
   const old = Array.isArray(list) ? list.filter(e => e !== null && e !== undefined) : [];
   const k = key && entry && typeof entry === "object" ? /** @type {any} */ (entry)[key] : undefined;
-  const rest = k === undefined ? old : old.filter(e => !(e && typeof e === "object" && e[key] === k));
+  const rest = k === undefined || !key ? old : old.filter(e => !(e && typeof e === "object" && e[key] === k));
   return [entry, ...rest].slice(0, Math.max(1, Math.floor(max)));
 }
 
