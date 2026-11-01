@@ -3,6 +3,34 @@
 All notable changes to wanderers-core. Versions follow [STABILITY.md](STABILITY.md). Modules pick up a release only when they update
 their pin.
 
+## 0.5.2 (2026-11-01)
+
+An **heirloom** item quality and shared stylesheet revision 4 (`wc-r4`). Additive only, so a patch under STABILITY.md (new
+exported values, a new token and new classes in a new revision; nothing removed, renamed or remapped). Modules move with
+`node vendor/wanderers-core/vendor.mjs update 0.5.2`; windows built with `UI_CLASSES` move to `wc-r4` automatically, and windows
+still carrying `wc-r3` (a module on 0.5.0 / 0.5.1) keep revision 3's look.
+
+### Added
+
+- `QUALITIES` / `QUALITY_KEYS`: `heirloom` (label "Heirloom", `rarity: null`), **appended after artifact** so the seven older keys
+  keep their indexes (code that compares positions reads the same). It is a separate kind of item, not a tier above artifact: a
+  module ranking by index should treat it apart. No dnd5e rarity maps to it; `quality("heirloom")` → "heirloom" (any case).
+- Stylesheet (revision 4): token `--wc-q-heirloom` (dark `#33d1ff`, light the same base mixed 48% with black, `#18647a`; both themes
+  and both theme selector forms, overridable with `--wc-qs-heirloom` like the others) and `wc-q-heirloom` / `[data-quality="heirloom"]`,
+  so `wc-q-text` and `.wc-item-slot` colour it. Contrast (computed against #1b1b1f, white and a parchment #e8e4da; not measured live): 9.6:1 dark, 6.7:1 on
+  white and 5.3:1 on parchment, in line with the other tiers (all at least 4:1 on parchment).
+
+### Changed
+
+- `UI_REVISION` 4, `UI_CLASSES` `["wc-ui", "wc-r4"]`; revision 4's hash recorded in `tests/ui.test.mjs` (1 to 3 kept). Revision 4
+  differs from 3 only by the heirloom lines.
+- `quality()` maps every input exactly as in 0.5.1 apart from "heirloom" (before: "common"); a test locks the old mappings.
+
+### Untested in Foundry
+
+- [ ] An item slot and a `wc-q-text` name with quality heirloom in a `wc-r4` window, dark and light theme: light blue, readable.
+- [ ] A `wc-r3` window (module on 0.5.1) and a `wc-r4` window open together: each keeps its own look.
+
 ## 0.5.1 (2026-11-01)
 
 A patch for the shared "Module data" folder. No API change and no stored-format change: modules move with

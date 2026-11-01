@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import * as Core from "../src/index.mjs";
 import { QUALITIES, QUALITY_KEYS, quality, qualityLabel, itemSlot, COIN_RATIO, toCopper, fromCopper, formatCoins, coins } from "../src/index.mjs";
-import { UI_STYLESHEET } from "../src/ui-model.mjs";
+import { UI_STYLESHEET, UI_REVISION } from "../src/ui-model.mjs";
 
 const css = readFileSync(new URL(`../src/${UI_STYLESHEET}`, import.meta.url), "utf8");
 
@@ -24,8 +24,28 @@ test("quality maps dnd5e rarities", () => {
   assert.equal(quality(5), "poor");
 });
 
+test("0.5.2 heirloom: a key with no rarity, last in the list, and quality() unchanged for every older input", () => {
+  assert.deepEqual({ ...QUALITIES.at(-1) }, { key: "heirloom", label: "Heirloom", rarity: null });
+  assert.equal(quality("heirloom"), "heirloom");
+  assert.equal(quality("Heirloom"), "heirloom");
+  assert.equal(qualityLabel("heirloom"), "Heirloom");
+  assert.match(itemSlot({ img: "i.webp", quality: "heirloom" }), /data-quality="heirloom"/);
+  // the first seven keep their positions
+  assert.deepEqual(QUALITY_KEYS.slice(0, 7), ["poor", "common", "uncommon", "rare", "epic", "legendary", "artifact"]);
+  // 0.5.1 behaviour, locked: every input that existed before maps exactly as it did
+  const locked = {
+    "": "poor", mundane: "poor", none: "poor", poor: "poor", junk: "poor", Mundane: "poor", "N/A": "common",
+    common: "common", uncommon: "uncommon", rare: "rare", veryRare: "epic", "Very Rare": "epic", very_rare: "epic", epic: "epic",
+    legendary: "legendary", artifact: "artifact", auto: "common", homebrew: "common", mythic: "common", toString: "common",
+    __proto__x: "common", heirlooms: "common"
+  };
+  for (const [r, q] of Object.entries(locked)) assert.equal(quality(r), q, r);
+  for (const v of [null, undefined, 5, {}, [], true]) assert.equal(quality(v), "poor", String(v));
+  assert.equal(qualityLabel("unknown-tier"), "Common");
+});
+
 test("QUALITIES is a frozen ordered list and every key has tokens and classes in the stylesheet", () => {
-  assert.deepEqual([...QUALITY_KEYS], ["poor", "common", "uncommon", "rare", "epic", "legendary", "artifact"]);
+  assert.deepEqual([...QUALITY_KEYS], ["poor", "common", "uncommon", "rare", "epic", "legendary", "artifact", "heirloom"]);
   assert.ok(Object.isFrozen(QUALITIES) && Object.isFrozen(QUALITIES[0]));
   for (const { key, label } of QUALITIES) {
     assert.ok(css.includes(`--wc-q-${key}:`), key);
@@ -34,7 +54,7 @@ test("QUALITIES is a frozen ordered list and every key has tokens and classes in
   }
   assert.equal(qualityLabel("veryRare"), "Epic");
   // light-theme overrides for every quality, both selector forms
-  for (const sel of ["body.theme-light .wc-ui.wc-r3 {", "body .wc-ui.wc-r3.theme-light {"]) {
+  for (const sel of [`body.theme-light .wc-ui.wc-r${UI_REVISION} {`, `body .wc-ui.wc-r${UI_REVISION}.theme-light {`]) {
     const i = css.indexOf(sel); const block = css.slice(i, css.indexOf("}", i));
     for (const { key } of QUALITIES) assert.match(block, new RegExp(`--wc-q-${key}: color-mix`), `${sel} ${key}`);
   }

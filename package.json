@@ -1,6 +1,6 @@
 {
   "name": "wanderers-core",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "private": true,
   "description": "Shared library for Foundry VTT modules, vendored and pinned into each module: common code plus an opt-in shared UI stylesheet and helpers (no runtime dependency).",
   "license": "MIT",

@@ -48,8 +48,8 @@ that keep that safe (tests in `tests/ui.test.mjs` check each):
 - **Tokens are defined on the root**, not on `:root`, so they never leak into the page.
 - **The revision class** `wc-r<N>` (`UI_REVISION`) changes whenever the stylesheet changes (a test compares the file to a recorded
   hash per revision). A window built against revision 1 carries `wc-r1` and is styled only by a copy that defines revision 1; a newer
-  copy's `wc-r3` rules don't touch it. Two copies of the same revision are byte-identical, so loading both is harmless.
-- **Keyframes and container queries are named per revision** (`wc-r3-pulse`, `@container wc-r3`), so copies can't redefine each
+  copy's `wc-r4` rules don't touch it. Two copies of the same revision are byte-identical, so loading both is harmless.
+- **Keyframes and container queries are named per revision** (`wc-r4-pulse`, `@container wc-r4`), so copies can't redefine each
   other's.
 - Class names are additive: a new revision may add classes; within one revision nothing changes.
 
@@ -74,11 +74,11 @@ red is lightened in the dark theme (body theme or `.theme-dark` / `.theme-light`
 | `--wc-mono` | `--font-monospace` |
 | `--wc-radius` `--wc-radius-sm` | 6 px / 4 px |
 | `--wc-tone` | set by the tone classes; components read it |
-| `--wc-q-poor` `-common` `-uncommon` `-rare` `-epic` `-legendary` `-artifact` | item quality colours (grey, near-white, green, blue, purple, orange, gold). Tuned per theme: the light theme darkens each one (near-white common becomes a mid grey) so names stay readable on parchment. A module may set `--wc-qs-<quality>` on its window to change the base colour for both themes. From revision 3 |
+| `--wc-q-poor` `-common` `-uncommon` `-rare` `-epic` `-legendary` `-artifact` `-heirloom` | item quality colours (grey, near-white, green, blue, purple, orange, gold, light blue). Tuned per theme: the light theme darkens each one (near-white common becomes a mid grey) so names stay readable on parchment. A module may set `--wc-qs-<quality>` on its window to change the base colour for both themes. From revision 3; `-heirloom` from revision 4 |
 
 ## Classes
 
-**Root:** `wc-ui` + `wc-r3` (use `UI_CLASSES`). `wc-flush` on the root removes the window content's padding.
+**Root:** `wc-ui` + `wc-r4` (use `UI_CLASSES`). `wc-flush` on the root removes the window content's padding.
 
 **Tones** (on any component, or alone to colour text): `wc-ok`, `wc-warn`, `wc-bad`, `wc-info`, `wc-off`, `wc-pending`, `wc-live`,
 `wc-accent`, `wc-none`.
@@ -105,7 +105,7 @@ red is lightened in the dark theme (body theme or `.theme-dark` / `.theme-light`
 | Coins (rev. 3) | `wc-coins` › `wc-coin wc-coin-gp\|sp\|cp` (`wc-zero` dims) › `wc-coin-icon` (a CSS-drawn dot, no image files), the number, `wc-sr` word |
 | Page head | `wc-pagehead` › `wc-pagehead-title` (h1/h2), `wc-pagehead-meta`; buttons after the title |
 | Focus | `wc-btn`, `wc-chip`, `wc-nav` show a 2 px accent outline on `:focus-visible` |
-| Narrow | at 720 px wide or less (`@container wc-r3`): the sidebar becomes a wrapping strip, `wc-cols` one column, timeline rows fold |
+| Narrow | at 720 px wide or less (`@container wc-r4`): the sidebar becomes a wrapping strip, `wc-cols` one column, timeline rows fold |
 
 ## Markup examples
 
@@ -168,7 +168,7 @@ From `vendor/wanderers-core/index.mjs`, pure and tested in Node. Every value is 
 
 | Helper | Returns |
 |---|---|
-| `UI_REVISION`, `UI_CLASSES`, `UI_STYLESHEET` | `3`, `["wc-ui", "wc-r3"]`, `"styles/wanderers-ui.css"` |
+| `UI_REVISION`, `UI_CLASSES`, `UI_STYLESHEET` | `4`, `["wc-ui", "wc-r4"]`, `"styles/wanderers-ui.css"` |
 | `TONES` | frozen `{ ok, warn, bad, info, off, pending, live, accent, none }` → `{ icon, word }` (Font Awesome classes, screen-reader word) |
 | `tone(t)` | a tone name; health levels and aliases through `level` ("error" → "bad"); unknown → "info" |
 | `icon(t, { word })` | `<i class="… wc-icon wc-<t>" aria-hidden="true"></i><span class="wc-sr">Word:</span>`; `word: false` drops the word |
@@ -177,8 +177,8 @@ From `vendor/wanderers-core/index.mjs`, pure and tested in Node. Every value is 
 | `statusLine(t, text, { tag, html })` | `<li class="wc-status wc-<t>">` icon + text (`tag: "p"` / `"div"`; `html` is trusted markup only) |
 | `statusLines(lines)` | `<ul class="wc-lines">` from health-report lines `{ level, text }` |
 | `navItem({ label, action, page, icon, dot, badge, active, muted, aria, tabindex, data })` | a `button.wc-nav` for ApplicationV2 `actions` (`data-action`, default `nav`) |
-| `QUALITIES`, `QUALITY_KEYS` | frozen list `{ key, label, rarity }` lowest first (poor, common, uncommon, rare, epic, legendary, artifact), and the keys |
-| `quality(rarity)` | the quality key for a dnd5e rarity: `""` / `mundane` → poor, `common`, `uncommon`, `rare`, `veryRare` → epic, `legendary`, `artifact`. Case and spaces ignored; unknown → `common`; never throws |
+| `QUALITIES`, `QUALITY_KEYS` | frozen list `{ key, label, rarity }` lowest first (poor, common, uncommon, rare, epic, legendary, artifact, heirloom), and the keys. `heirloom` (0.5.2) is appended last so the first seven keep their indexes; it has no dnd5e rarity (`rarity: null`) and is a separate kind of item, not a tier above artifact: when ranking by index, treat it apart |
+| `quality(rarity)` | the quality key for a dnd5e rarity: `""` / `mundane` → poor, `common`, `uncommon`, `rare`, `veryRare` → epic, `legendary`, `artifact`; a quality key maps to itself (`heirloom` only this way). Case and spaces ignored; unknown → `common`; never throws |
 | `qualityLabel(q)` | "Epic" for `epic` or `veryRare` |
 | `itemSlot({ img, quality, rarity, name, count, size, cls })` | a `span.wc-item-slot` (empty without `img`); `size` `"sm"` / `"lg"`; the quality word is added for screen readers |
 | `formatCoins(amount, { style, zero, ratio })` | `12g 46s 8c` (`style: "short"`, default) or `12 gold, 46 silver, 8 copper` (`"long"`). `amount` is copper or `{ gp, sp, cp }`. Zero parts left out unless `zero: true`; nothing reads `0c` |

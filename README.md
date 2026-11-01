@@ -129,7 +129,7 @@ everything is experimental** (may change in a minor release, with a changelog no
 | Settings file | `SETTINGS_FORMAT`, `buildExport(id, values, opts)`, `readImport(id, input, defs, current, { skip, requireModule, label, validators })`, `checkValue`, `preview`, `fileName` | experimental |
 | Update notes | `decide({ stored, current, knownWorld })`, `entriesBetween`, `buildNotice({ notes, always, from, to, on, ctx })`, `lintNotes` | experimental |
 | UI look | `UI_REVISION`, `UI_CLASSES`, `UI_STYLESHEET`, `TONES`, `tone`, `icon`, `badge`, `dot`, `statusLine`, `statusLines`, `navItem`; stylesheet `styles/wanderers-ui.css` (classes and tokens in [docs/ui.md](docs/ui.md)) | experimental |
-| Item quality | `QUALITIES`, `QUALITY_KEYS`, `quality(rarity)`, `qualityLabel`, `itemSlot({ img, quality, rarity, name, count, size })`; stylesheet tokens `--wc-q-*`, classes `wc-item-slot`, `wc-q-*`, `wc-q-text` | experimental |
+| Item quality | `QUALITIES`, `QUALITY_KEYS` (8 keys, `heirloom` last since 0.5.2), `quality(rarity)`, `qualityLabel`, `itemSlot({ img, quality, rarity, name, count, size })`; stylesheet tokens `--wc-q-*`, classes `wc-item-slot`, `wc-q-*`, `wc-q-text` | experimental |
 | Coins | `formatCoins(amount, { style, zero, ratio })`, `toCopper`, `fromCopper`, `coins(amount, { zero, ratio })`, `COIN_RATIO` (100 copper to the silver, 100 silver to the gold); stylesheet `wc-coins` | experimental |
 | Window placement (pure) | `readPlacement`, `readPlacements`, `getPlacement`, `setPlacement`, `removePlacement`, `samePlacement`, `clampPlacement(placement, viewport, { scale, minWidth, minHeight, size })`, `placementOf`, `debouncer(fn, ms)`, `isWindowKey`, constants `PLACEMENT_SETTING` `PLACEMENT_VERSION` `PLACEMENT_MAX` `PLACEMENT_SAVE_MS` `PLACEMENT_MIN_SIZE` `WINDOW_KEY_RE` | experimental |
 | Keybindings (pure) | `defineOpenKeybinding(spec)`, `keybindingConfig(def, { isGM, onError })`, `KEY_MODIFIERS`, `ACTION_RE`, `KEY_CODE_RE` | experimental |
@@ -153,7 +153,7 @@ Test fakes (dev only, never imported at run time, left out of module zips): `tes
 ([docs/testing.md](docs/testing.md)). Not part of the runtime API.
 
 Formats (versioned, see STABILITY.md): settings file `format` 1; socket envelopes `request` / `leader` / `hook`; release bundle
-`format` 1; lock file `lockVersion` 1; scene tab registry `version` 1; window placement setting `v` 1; shared stylesheet revision `UI_REVISION` 3 (`wc-r3`).
+`format` 1; lock file `lockVersion` 1; scene tab registry `version` 1; window placement setting `v` 1; shared stylesheet revision `UI_REVISION` 4 (`wc-r4`).
 
 Core fires **no hooks of its own**. `createLeader` fires only the hook names the module passes (`leaderHook`, `hooks`), all in the
 module's namespace.
@@ -250,7 +250,7 @@ The helpers in `index.mjs` (`badge`, `icon`, `dot`, `statusLine`, `statusLines`,
 
 ```js
 import { UI_CLASSES, badge } from "../vendor/wanderers-core/index.mjs";
-static DEFAULT_OPTIONS = { classes: ["my-window", ...UI_CLASSES] };   // "wc-ui wc-r3"
+static DEFAULT_OPTIONS = { classes: ["my-window", ...UI_CLASSES] };   // "wc-ui wc-r4"
 ```
 
 **Opt-in and version-safe**: every rule is scoped under `.wc-ui.wc-r<revision>`, tokens live on that root, there are no `:root`,

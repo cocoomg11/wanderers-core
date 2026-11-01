@@ -51,7 +51,7 @@ test("dataFolderMergePlan: only own entries move; a folder goes only once empty"
 test("new exports in both indexes", () => {
   for (const k of ["dataFolders", "dataFolderMergePlan"]) assert.equal(typeof Core[k], "function", k);
   assert.equal(typeof Fnd.mergeDataFolders, "function");
-  assert.equal(Core.CORE_VERSION, "0.5.1");
+  assert.match(Core.CORE_VERSION, /^0\.5\.\d+$/);
 });
 
 /* ---- Foundry halves on core's fakes ---- */
