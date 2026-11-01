@@ -45,6 +45,7 @@ test("install --from pins a local copy; verify passes, then catches edits, addit
     const lock = JSON.parse(readFileSync(join(mod, V.DEFAULT_LOCK), "utf8"));
     assert.equal(lock.source, "local"); assert.equal(lock.name, "wanderers-core"); assert.equal(lock.dir, V.DEFAULT_DIR);
     assert.ok(existsSync(join(mod, V.DEFAULT_DIR, "index.mjs")));
+    assert.ok(existsSync(join(mod, V.DEFAULT_DIR, "styles", "wanderers-ui.css")), "the shared stylesheet ships where module.json `styles` points");
     r = run(mod, "verify"); assert.equal(r.status, 0, r.stderr); assert.match(r.stdout, /OK/);
 
     const file = join(mod, V.DEFAULT_DIR, "text.mjs");
