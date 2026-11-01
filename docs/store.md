@@ -49,6 +49,9 @@ await Store.remove();                    // cleanup: deletes the entry (every co
 - **Filing an existing entry**: `file()` (writer only, never throws) moves a root-level entry into "Module data" once and marks it
   `flags.<ID>.dataFolderFiled`, so a GM who moves it afterwards (even back to the root) keeps their choice. An entry already in a
   folder of the GM's choosing stays there and is marked too. A failed move is tried again next time.
+  Since 0.5.1 `file()` first runs `mergeDataFolders`: if modules created several "Module data" folders at the same moment, it moves
+  this module's own entry into the picked one and deletes extras left empty, so the modules' writers converge the world on one
+  folder ([data-folder.md](data-folder.md#several-folders-creation-race)). It moves nothing of other modules'. Tidiness, not secrecy.
 - **Writes**: chained, so two updates in a row never overwrite each other; each reads the stored data, runs `fn`, normalizes, checks
   the size, and writes the data plus a deletion for every key that disappeared (to `deleteDepth`, default 3 levels: Foundry merges
   object updates, so removed keys would otherwise stay). Deletions use v14's operator (`_del`) when present, else `-=` keys. A failed

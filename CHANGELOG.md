@@ -3,13 +3,48 @@
 All notable changes to wanderers-core. Versions follow [STABILITY.md](STABILITY.md). Modules pick up a release only when they update
 their pin.
 
-## Unreleased
+## 0.5.1 (2026-11-01)
+
+A patch for the shared "Module data" folder. No API change and no stored-format change: modules move with
+`node vendor/wanderers-core/vendor.mjs update 0.5.1` (and `module-checks.yml@v0.5.1` once tagged) and need no code change; the fix
+runs from `Store.file()`, which every module's writer already calls at ready.
+
+### Fixed
+
+- **Several "Module data" folders after a creation race** (seen live on 14.369 with three modules updated at once): each module's
+  `ensureDataFolder` found no folder at ready and each created one, so three root folders appeared within 100 ms; only the picked one
+  was hidden, and the other two showed in the GM's sidebar with stores in them. Now:
+  - **Hiding** (`dataFolderIds`, so `hideDataFolder`): every root JournalEntry folder named "Module data" is hidden, with all their
+    subfolders and entries, not only the picked one.
+  - **Creation**: after `Folder.create`, `ensureDataFolder` reads the folders again and returns `pickDataFolder`'s choice, so
+    concurrent creators file into the same folder (there is no lock across modules, so the extra folders can still be made).
+  - **Self-healing**: `Store.file()` (writer only) runs `mergeDataFolders` first: when several data folders exist, it moves only this
+    module's own store entry into the picked folder (never another module's documents, nor the GM's) and deletes each extra folder
+    that is then empty. Each module's writer doing this converges the world on one folder; a folder still holding something else
+    stays (and stays hidden).
+  - `removeDataFolderIfEmpty` deletes every empty data folder, not only the picked one.
+
+### Added
+
+- `dataFolders(folders)` (pure): every root "Module data" folder, the picked one first. `dataFolderMergePlan({ folders, entries, own })`
+  (pure): `{ target, move, remove }`. `mergeDataFolders(moduleId, { entries, log })` (Foundry, GM only, never throws): resolves to
+  `{ moved, removed }`. All experimental. Tests: `tests/v051.test.mjs` (pure rules; three concurrent creators on core's fakes; three
+  stores created in a race then merged by a writer's `file()`; three modules each in their own folder, each merging only its own
+  entry, a GM's entry kept; players, one folder, failures).
 
 ### Security
 
 - Dev dependencies only (nothing ships to Foundry): `package.json` overrides `minimatch` to 11.0.3, which clears Dependabot's
   moderate alert (GHSA-g3hv-75wg-m249) that came through `eslint` and `@eslint/config-array`. Lockfile regenerated; `npm audit` is
   clean and `npm run ci` passes. No change to the library or the bundle.
+
+### Untested in Foundry
+
+- [ ] A world with three "Module data" folders (from the 0.5.0 race): after updating the modules to 0.5.1 and one reload, every
+  store sits in one folder, the empty extras are gone, and nothing shows in the GM's Journal sidebar with "Show module data" off.
+- [ ] A fresh world with the toolkit, Red Book and the Satchel enabled at once: at most one "Module data" folder remains after the
+  first reload (the first load may still create extras; they merge on the writers' `file()`).
+- [ ] A document the GM put in an extra "Module data" folder by hand is not moved, and that folder stays (hidden).
 
 ## 0.5.0 (2026-11-01)
 
