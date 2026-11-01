@@ -27,7 +27,7 @@ function fakeWorld() {
     c.game = {
       user,
       users: Object.assign(users, { contents: [...users.values()], activeGM: null }),
-      socket: { on: (channel, fn) => listeners.push({ client: c, channel, fn }), off: () => {}, emit: (channel, msg) => bus.emit(c, channel, msg) },
+      socket: { on: (channel, fn) => listeners.push({ client: c, channel, fn }), off: (channel, fn) => { const i = listeners.findIndex(l => l.client === c && l.channel === channel && l.fn === fn); if (i >= 0) listeners.splice(i, 1); }, emit: (channel, msg) => bus.emit(c, channel, msg) },
       settings: {
         settings: defs,
         register: (ns, key, cfg) => defs.set(`${ns}.${key}`, { ...cfg, namespace: ns, key }),
@@ -65,10 +65,10 @@ test("requests route to the leader with Foundry's sender id; spoofed fields, bad
   as(plC); assert.equal(P.request("note", { text: "hello" }), true);
   as(plC); assert.equal(P.request("note", { text: 5 }), false, "the sender refuses bad data");
   as(plC); P.request("gmOnly", {});
-  as(plC); plC.game.socket.emit("module.mod-a", { action: "request", kind: "note", rid: "same-rid-1", data: { text: "a" } });
-  as(plC); plC.game.socket.emit("module.mod-a", { action: "request", kind: "note", rid: "same-rid-1", data: { text: "a" } });
-  as(plC); plC.game.socket.emit("module.mod-a", { action: "request", kind: "note", rid: "spoof-rid-2", data: { text: "b", userId: gmUser.id } });
-  as(plC); plC.game.socket.emit("module.mod-a", { action: "request", kind: "evil", rid: "evil-rid-3", data: {} });
+  as(plC); plC.game.socket.emit("module.mod-a", { action: "request", kind: "note", rid: "same-1-abc", data: { text: "a" } });
+  as(plC); plC.game.socket.emit("module.mod-a", { action: "request", kind: "note", rid: "same-1-abc", data: { text: "a" } });
+  as(plC); plC.game.socket.emit("module.mod-a", { action: "request", kind: "note", rid: "spoof-2-abc", data: { text: "b", userId: gmUser.id } });
+  as(plC); plC.game.socket.emit("module.mod-a", { action: "request", kind: "evil", rid: "evil-3-abc", data: {} });
   as(gmC); await new Promise(r => setTimeout(r, 10));
   assert.deepEqual(got, [[{ text: "hello" }, player.id], [{ text: "a" }, player.id]]);
   L.stop(); P.stop();
@@ -124,4 +124,51 @@ test("features, settings and logger are bound to the module's own namespace", ()
   const logs = []; const orig = console.log; console.log = (...a) => logs.push(a);
   try { const Lg = createLogger("mod-a"); Lg.log("hidden"); globalThis.game.settings.set("mod-a", "debugLog", true); Lg.log("shown"); } finally { console.log = orig; }
   assert.deepEqual(logs, [["mod-a [debug] |", "shown"]]);
+});
+
+test("broadcast hooks fire elsewhere only when sent by the leader's session of a GM user", async () => {
+  W.users.set(gmUser.id, gmUser); W.users.set(player.id, player);
+  const tab1 = W.client(gmUser), tab2 = W.client(gmUser), plC = W.client(player);
+  const hooks = ["mod-a.done"];
+  as(tab1); const L1 = createLeader({ id: "mod-a", hooks, settleMs: 0, heartbeatMs: 1e9 }); L1.start();
+  await new Promise(r => setTimeout(r, 2));
+  as(tab2); const L2 = createLeader({ id: "mod-a", hooks, settleMs: 0, heartbeatMs: 1e9 }); L2.start();
+  as(plC); const P = createLeader({ id: "mod-a", hooks }); P.start();
+  await L1.settled(); await L2.settled();
+  const fired = () => globalThis.Hooks.calls.filter(([n]) => n === "mod-a.done").map(([, p]) => p.n);
+  globalThis.Hooks.calls = [];
+  as(tab1); assert.equal(L1.broadcastHook("mod-a.done", { n: 1 }), true);
+  assert.deepEqual(fired(), [1, 1, 1], "the leader, the other GM tab and the player each fire it once");
+  globalThis.Hooks.calls = [];
+  as(tab2); assert.equal(L2.broadcastHook("mod-a.done", { n: 2 }), false, "a non-leader tab fires it locally only");
+  assert.deepEqual(fired(), [2]);
+  globalThis.Hooks.calls = [];
+  as(plC); plC.game.socket.emit("module.mod-a", { action: "hook", name: "mod-a.done", sid: L1.info().self, payload: { n: 3 } });
+  as(tab2); tab2.game.socket.emit("module.mod-a", { action: "hook", name: "mod-a.done", sid: "tab2session00000", payload: { n: 4 } });
+  W.bus.emit({ user: { id: "nobody0000000000" } }, "module.mod-a", { action: "hook", name: "mod-a.done", sid: L1.info().self, payload: { n: 5 } });
+  as(tab1); tab1.game.socket.emit("module.mod-a", { action: "hook", name: "mod-a.done", payload: { n: 6 } });
+  assert.deepEqual(fired(), [], "a player, a GM tab that isn't the leader, an unknown sender and a missing sid are all refused");
+  as(tab1); L1.stop(); as(tab2); L2.stop(); as(plC); P.stop();
+});
+
+test("requests: per-user rate limit and unparseable request ids", async () => {
+  W.users.set(gmUser.id, gmUser); W.users.set(player.id, player);
+  const gmC = W.client(gmUser), plC = W.client(player);
+  const requests = defineRequests({ note: { fields: {} } });
+  let got = 0;
+  as(gmC); const L = createLeader({ id: "mod-a", requests, settleMs: 0, heartbeatMs: 1e9, rateLimit: { burst: 3, perSecond: 0.001 } });
+  L.handle("note", () => got++); L.start(); await L.settled();
+  as(plC); const P = createLeader({ id: "mod-a", requests }); P.start();
+  for (let i = 0; i < 5; i++) { as(plC); P.request("note"); }
+  as(gmC); await new Promise(r => setTimeout(r, 10));
+  assert.equal(got, 3, "the fourth and fifth requests are refused");
+  L.stop(); P.stop();
+  got = 0;
+  as(gmC); const L2 = createLeader({ id: "mod-a", requests, settleMs: 0, heartbeatMs: 1e9 }); L2.handle("note", () => got++); L2.start(); await L2.settled();
+  as(plC); plC.game.socket.emit("module.mod-a", { action: "request", kind: "note", rid: "plainrid", data: {} });
+  as(plC); plC.game.socket.emit("module.mod-a", { action: "request", kind: "note", rid: "ok12-1-abc", data: {} });
+  W.bus.emit({ user: { id: "nobody0000000000" } }, "module.mod-a", { action: "request", kind: "note", rid: "ok12-2-abc", data: {} });
+  as(gmC); await new Promise(r => setTimeout(r, 10));
+  assert.equal(got, 1, "an id not in makeRequestId's shape and an unknown sender are refused");
+  L2.stop();
 });

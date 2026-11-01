@@ -150,3 +150,19 @@ test("update notes: entries, feature gating, action checks", async () => {
   assert.deepEqual(lintNotes(NOTES), []);
   assert.equal(lintNotes([{ version: "1.0.0" }, { version: "1.1.0" }]).length, 1);
 });
+
+test("settings file: per-key validators for Object and Array settings", () => {
+  const defs = new Map([["table", { scope: "world", type: Object }], ["list", { scope: "world", type: Array }], ["n", { scope: "world", type: Number }]]);
+  const file = { module: "mod", format: 1, world: { table: { a: 1, b: "x" }, list: [1, 2, "three"], n: 2 } };
+  const validators = {
+    table: v => Object.values(/** @type {object} */ (v)).every(x => typeof x === "number") || "every entry should be a number",
+    list: v => ({ ok: true, value: /** @type {unknown[]} */ (v).filter(x => typeof x === "number") }),
+    n: () => { throw new Error("boom"); }
+  };
+  const r = readImport("mod", file, defs, {}, { validators });
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.invalid, [{ key: "table", reason: "every entry should be a number" }, { key: "n", reason: "couldn't be checked (boom)" }]);
+  assert.deepEqual(r.rows.map(x => [x.key, x.to]), [["list", [1, 2]]]);
+  assert.deepEqual(readImport("mod", file, defs, {}, { validators: { table: () => false } }).invalid[0], { key: "table", reason: "has the wrong shape" });
+  assert.equal(readImport("mod", file, defs).rows.length, 3, "no validators: as before");
+});

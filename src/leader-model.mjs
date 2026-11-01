@@ -181,6 +181,21 @@ export function requestId(msg) {
   return typeof rid === "string" && ID_RE.test(rid) ? rid : null;
 }
 
+/** The shape `makeRequestId` produces: `<prefix>-<n>-<time in base 36>`. */
+const RID_PARTS_RE = /^([A-Za-z0-9_-]{4,}?)-(\d{1,15})-([0-9a-z]{1,12})$/;
+
+/**
+ * Splits a request id made by `makeRequestId` into its parts, or null when it doesn't have that shape (the leader refuses those).
+ * @param {unknown} rid
+ * @returns {{ prefix: string, n: number, time: number } | null}
+ */
+export function parseRequestId(rid) {
+  if (typeof rid !== "string" || !ID_RE.test(rid)) return null;
+  const m = RID_PARTS_RE.exec(rid); if (!m) return null;
+  const n = Number(m[2]); const time = parseInt(m[3], 36);
+  return Number.isSafeInteger(n) && Number.isSafeInteger(time) ? { prefix: m[1], n, time } : null;
+}
+
 /**
  * A fresh request id: `<prefix>-<n>-<time>` cut to the id rules. Unique per client as long as `n` counts up.
  * @param {string} prefix this client's session id (or user id)
@@ -191,4 +206,39 @@ export function requestId(msg) {
 export function makeRequestId(prefix, n, now = Date.now()) {
   const s = `${String(prefix ?? "").padEnd(4, "x")}-${n}-${now.toString(36)}`.replace(/[^A-Za-z0-9_-]/g, "");
   return s.slice(0, 64);
+}
+
+/** How long a client that doesn't take part in the election (a player) still counts a GM session it last heard (ms). Longer than a
+ * background tab's slowed timers (about a minute), so a quiet leader tab isn't forgotten. */
+export const PASSIVE_MAX_AGE_MS = 75_000;
+
+/**
+ * A broadcast hook message `{ action: "hook", name, sid, payload }` read safely, or null. `sid` is the sending GM session.
+ * @param {unknown} msg
+ * @returns {{ name: string, sid: string, payload: unknown } | null}
+ */
+export function readHookMessage(msg) {
+  const m = /** @type {any} */ (msg);
+  if (!m || typeof m !== "object" || m.action !== "hook") return null;
+  if (typeof m.name !== "string" || !m.name || m.name.length > 200) return null;
+  if (typeof m.sid !== "string" || !ID_RE.test(m.sid)) return null;
+  return { name: m.name, sid: m.sid, payload: m.payload ?? {} };
+}
+
+/**
+ * Whether a broadcast hook from another client may fire here. Every rule must hold; the first that fails is the reason.
+ * The sender is Foundry's sender user (never a payload field): unknown senders and players are refused, and the hook must come
+ * from the session this client currently counts as the leader.
+ * @param {{ name: string, sid: string } | null} m from readHookMessage
+ * @param {{ sender?: UserLike | null, leader?: Session | null, names?: Set<string> }} ctx sender: `game.users.get(senderId)`;
+ *   leader: the session this client counts as the leader (its `userId` is Foundry's sender id for that session)
+ * @returns {{ ok: true } | { ok: false, reason: string }}
+ */
+export function acceptHook(m, { sender = null, leader = null, names = new Set() } = {}) {
+  if (!m) return { ok: false, reason: "not a hook message" };
+  if (!names.has(m.name)) return { ok: false, reason: `hook ${m.name} isn't one of this module's broadcast hooks` };
+  if (!sender) return { ok: false, reason: "hook from an unknown user refused" };
+  if (!sender.isGM) return { ok: false, reason: "hook from a player refused" };
+  if (!leader || m.sid !== leader.id || leader.userId !== sender.id) return { ok: false, reason: "hook from a session that isn't the leader refused" };
+  return { ok: true };
 }

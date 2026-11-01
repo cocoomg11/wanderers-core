@@ -11,8 +11,10 @@ export { defineFeatures, isOn, allOn, splitNeeds } from "./features-model.mjs";
 export { defineSettings, scopeOf, records, tabRows, convert, registration } from "./settings-model.mjs";
 export {
   HEARTBEAT_MS, GRACE_MS, SETTLE_MS, SEEN_MAX, ID_RE, newId, compareSessions, aliveCutoff, leaderOf, isLeader, prune,
-  readSessionMessage, applySessionMessage, pickActiveGM, seenCache, requestId, makeRequestId
+  readSessionMessage, applySessionMessage, pickActiveGM, seenCache, requestId, makeRequestId, parseRequestId, readHookMessage,
+  acceptHook, PASSIVE_MAX_AGE_MS
 } from "./leader-model.mjs";
+export { RATE_BURST, RATE_PER_SECOND, rateLimiter } from "./rate-model.mjs";
 export { MAX_BYTES, MAX_DEPTH, defineRequests, readRequest, makeRequest, jsonBytes } from "./socket-model.mjs";
 export { LEVELS, level, healthCollector, worst, counts } from "./health-model.mjs";
 export { CONFIRM_WORD, confirmed, hasFlags, dryRun, picked, changedSettings, summary } from "./cleanup-model.mjs";

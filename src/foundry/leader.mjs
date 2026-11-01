@@ -12,6 +12,7 @@
  */
 import * as M from "../leader-model.mjs";
 import { readRequest, makeRequest, jsonBytes } from "../socket-model.mjs";
+import { rateLimiter } from "../rate-model.mjs";
 
 /**
  * @typedef {object} LeaderOptions
@@ -24,6 +25,8 @@ import { readRequest, makeRequest, jsonBytes } from "../socket-model.mjs";
  * @property {number} [settleMs]
  * @property {number} [heartbeatMs]
  * @property {number} [hookMaxBytes] largest broadcast hook payload (default 16 KiB)
+ * @property {{ burst?: number, perSecond?: number } | false} [rateLimit] per-user limit on requests the leader accepts from other
+ *   clients (token bucket; default 20 at once, 5 a second). `false` turns it off.
  */
 
 /**
@@ -36,7 +39,9 @@ import { readRequest, makeRequest, jsonBytes } from "../socket-model.mjs";
  * @property {(fn: () => void) => void} onBye runs `fn` when this tab is closing (best effort)
  * @property {(kind: string, fn: (data: any, user: any, meta: { rid: string }) => unknown) => void} handle registers the leader's handler
  * @property {(kind: string, data?: Record<string, unknown>) => boolean} request has the leader run `kind`; false when no GM is connected or the data is invalid
- * @property {(name: string, payload?: unknown) => void} broadcastHook fires one of our hooks here and on every other client
+ * @property {(name: string, payload?: unknown) => boolean} broadcastHook fires one of our hooks here, and on every other client when
+ *   this client is the leader (other clients accept a broadcast hook only from the leader's session of a GM user). Returns whether
+ *   it was sent to the other clients.
  * @property {() => any} activeGM the active GM user, or null
  * @property {() => { started: boolean, leader: boolean, sessions: number, self?: string, settled?: boolean }} info for health checks
  */
@@ -63,6 +68,8 @@ export function createLeader(opts) {
   /** @type {(() => void)[]} */ const byeFns = [];
   /** @type {Map<string, (data: any, user: any, meta: { rid: string }) => unknown>} */ const handlers = new Map();
   const seen = M.seenCache();
+  const limiter = opts.rateLimit === false ? null : rateLimiter(opts.rateLimit ?? {});
+  const helloLimiter = rateLimiter({ burst: 3, perSecond: 0.2 });
   let reqN = 0;
 
   const g = () => /** @type {any} */ (globalThis).game;
@@ -90,6 +97,16 @@ export function createLeader(opts) {
   }
   function ping() { S.prevPing = S.lastPing; S.lastPing = Date.now(); emitSession("ping"); recompute(); }
 
+  /** The session this client counts as the leader. GM clients take part in the election; others (players) follow the GM sessions'
+   * pings passively, with a longer cut-off. */
+  function leaderSession() {
+    if (S.self) { if (S.leaderFor !== activeGM()?.id) recompute(); return S.peers.find(p => p.id === S.leader) ?? (S.leader === S.self.id ? S.self : null); }
+    const gm = activeGM(); if (!gm) return null;
+    const live = M.prune(S.peers, Date.now() - M.PASSIVE_MAX_AGE_MS);
+    const sid = M.leaderOf(live, { gmUserId: gm.id });
+    return live.find(p => p.id === sid) ?? null;
+  }
+
   function isLeader() {
     const gm = activeGM(); if (!gm || gm.id !== g()?.user?.id) return false;
     if (!S.started) return true;
@@ -104,9 +121,12 @@ export function createLeader(opts) {
     if (!gm || gm.id !== g()?.user?.id) return;
     if (!S.settled) await settled();
     if (!isLeader()) return;
+    // The sender is Foundry's sender id only: never a field in the payload. Unknown senders are refused.
+    const user = typeof senderId === "string" ? g().users.get(senderId) : null; if (!user) return log("request from an unknown user refused");
+    if (limiter && !limiter.take(user.id)) return log(`request from ${user.id} refused: too many requests`);
     const r = readRequest(schemas, msg);
     if (!r.ok) return log(`request refused: ${r.reason}`);
-    const user = g().users.get(senderId); if (!user) return log("request from an unknown user refused");
+    if (!M.parseRequestId(r.rid)) return log("request refused: unreadable request id");
     if (schemas[r.kind].from === "gm" && !user.isGM) return log(`request ${r.kind} from a player refused`);
     if (!seen.firstTime(r.rid)) return log("duplicate request skipped", r.rid);
     const h = handlers.get(r.kind); if (!h) return log(`no handler for ${r.kind}`);
@@ -116,18 +136,29 @@ export function createLeader(opts) {
   /** @param {any} msg @param {string} senderId */
   function onMessage(msg, senderId) {
     if (!msg || typeof msg !== "object") return;
+    if (msg.action === "leader" && msg.op === "hello") {
+      // A client that just loaded asks who leads; the leader answers with its session. Rate-limited like requests.
+      const sender = typeof senderId === "string" ? g().users.get(senderId) : null;
+      if (sender && S.self && isLeader() && helloLimiter.take(sender.id)) emitSession("here");
+      return;
+    }
     if (msg.action === "leader") {
-      if (!S.started || !S.self) return;
-      const m = M.readSessionMessage(msg); if (!m || m.sid === S.self.id) return;
-      const sender = g().users.get(senderId); if (!sender?.isGM) return;
+      const m = M.readSessionMessage(msg); if (!m || m.sid === S.self?.id) return;
+      const sender = typeof senderId === "string" ? g().users.get(senderId) : null; if (!sender?.isGM) return;
       S.peers = M.applySessionMessage(S.peers, m, sender.id, Date.now());
+      if (!S.started || !S.self) { S.peers = M.prune(S.peers, Date.now() - M.PASSIVE_MAX_AGE_MS); return; }
       if (m.op === "ping") emitSession("here");
       recompute();
       return;
     }
     if (msg.action === "request") { onRequest(msg, senderId).catch(e => warn("request", e)); return; }
-    if (msg.action === "hook" && typeof msg.name === "string" && hookNames.has(msg.name) && jsonBytes(msg.payload) <= hookMax) {
-      try { /** @type {any} */ (globalThis).Hooks.callAll(msg.name, msg.payload ?? {}); } catch (e) { warn("hook", e); }
+    if (msg.action === "hook") {
+      const m = M.readHookMessage(msg);
+      const sender = typeof senderId === "string" ? g().users.get(senderId) ?? null : null;
+      const ok = M.acceptHook(m, { sender, leader: leaderSession(), names: hookNames });
+      if (!ok.ok) return log(ok.reason);
+      if (jsonBytes(m?.payload) > hookMax) return log("hook payload too large");
+      try { /** @type {any} */ (globalThis).Hooks.callAll(/** @type {any} */ (m).name, /** @type {any} */ (m).payload); } catch (e) { warn("hook", e); }
     }
   }
 
@@ -138,7 +169,7 @@ export function createLeader(opts) {
       if (S.listener) return;
       S.listener = onMessage;
       g().socket.on(channel, S.listener);
-      if (!g().user?.isGM) return;
+      if (!g().user?.isGM) { emit({ action: "leader", op: "hello" }); return; }
       S.self = { id: M.newId(), userId: g().user.id, since: Date.now() };
       S.started = true;
       S.settle = new Promise(res => setTimeout(() => { S.settled = true; S.leader = undefined; recompute(); res(); }, settleMs));
@@ -152,6 +183,7 @@ export function createLeader(opts) {
       if (S.self) emitSession("bye");
       try { if (S.listener) g().socket.off(channel, S.listener); } catch { /* socket gone */ }
       try { if (S.connected !== null) /** @type {any} */ (globalThis).Hooks.off("userConnected", S.connected); } catch { /* hooks gone */ }
+      limiter?.clear(); helloLimiter.clear();
       Object.assign(S, { self: null, peers: [], started: false, settled: false, leader: null, timer: null, listener: null, connected: null });
     },
     settled,
@@ -178,8 +210,9 @@ export function createLeader(opts) {
     broadcastHook(name, payload = {}) {
       if (!hookNames.has(name)) throw new Error(`${id}: "${name}" isn't one of this module's broadcast hooks`);
       try { /** @type {any} */ (globalThis).Hooks.callAll(name, payload); } catch (e) { warn("hook", e); }
-      if (jsonBytes(payload) <= hookMax) emit({ action: "hook", name, payload });
-      else warn(`hook ${name}: payload too large to broadcast`);
+      if (!S.self || !isLeader()) { log(`hook ${name}: fired here only (this client isn't the leader)`); return false; }
+      if (jsonBytes(payload) > hookMax) { warn(`hook ${name}: payload too large to broadcast`); return false; }
+      return emit({ action: "hook", name, sid: S.self.id, payload });
     },
     activeGM,
     info() {

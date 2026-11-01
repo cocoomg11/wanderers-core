@@ -53,6 +53,11 @@ disagree, the module's file wins for that module, and this file should be update
 - Players send choices over the module's own socket channel with a request id; the leader drops repeats.
 - Every socket request is read through a schema (`defineRequests` / `readRequest`): unknown kinds, wrong types, oversized payloads
   and missing request ids are refused. The sender is Foundry's sender id, never a field in the payload.
+- **Sender identity comes only from Foundry.** Never fall back to a `userId` (or any other field) in the payload. Refuse the message
+  when `game.users.get(senderId)` is missing. Notices and result messages (anything that tells a client "this happened" or shows a
+  message to the user) are accepted only from GM senders, and broadcast hooks only from the current leader's session.
+- The leader rate-limits requests per user (`createLeader({ rateLimit })`, on by default) and refuses request ids that aren't in
+  `makeRequestId`'s shape. A module with its own socket code does the same (`rateLimiter`, `parseRequestId`).
 
 ## Performance
 

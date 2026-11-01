@@ -67,3 +67,29 @@ test("ids", () => {
   assert.match(rid, M.ID_RE); assert.ok(rid.startsWith("abxx-7-"));
   assert.ok(M.makeRequestId("x".repeat(100), 1).length <= 64);
 });
+
+test("request ids: only ids in makeRequestId's shape parse", () => {
+  const rid = M.makeRequestId("Session1234abcd", 12, 1_700_000_000_000);
+  assert.deepEqual(M.parseRequestId(rid), { prefix: "Session1234abcd", n: 12, time: 1_700_000_000_000 });
+  for (const bad of ["abcd", "abcd-1", "ab-1-x", "abcd-x-1", "abcd-1-X!", "a b-1-2", 5, null, "abcd-1-" + "z".repeat(13)]) {
+    assert.equal(M.parseRequestId(bad), null, String(bad));
+  }
+});
+
+test("broadcast hooks: only from the leader's session of a known GM user", () => {
+  const names = new Set(["mod-a.done"]);
+  const gmU = { id: "gm1", isGM: true }, other = { id: "gm2", isGM: true }, pl = { id: "pl1", isGM: false };
+  const leader = { id: "lead1", userId: "gm1", since: 1 };
+  const m = M.readHookMessage({ action: "hook", name: "mod-a.done", sid: "lead1", payload: { a: 1 }, userId: "gm1" });
+  assert.deepEqual(m, { name: "mod-a.done", sid: "lead1", payload: { a: 1 } });
+  assert.equal(M.acceptHook(m, { sender: gmU, leader, names }).ok, true);
+  assert.match(M.acceptHook(m, { sender: null, leader, names }).reason, /unknown user/, "an unknown sender is refused");
+  assert.match(M.acceptHook(m, { sender: pl, leader, names }).reason, /player/);
+  assert.match(M.acceptHook(m, { sender: other, leader, names }).reason, /isn't the leader/, "another GM can't borrow the leader's sid");
+  assert.match(M.acceptHook(m, { sender: gmU, leader: null, names }).reason, /isn't the leader/);
+  assert.match(M.acceptHook({ ...m, sid: "tab2x" }, { sender: gmU, leader, names }).reason, /isn't the leader/, "a second tab of the GM isn't the leader");
+  assert.match(M.acceptHook({ ...m, name: "mod-b.x" }, { sender: gmU, leader, names }).reason, /isn't one of/);
+  assert.equal(M.acceptHook(null, { sender: gmU, leader, names }).ok, false);
+  assert.equal(M.readHookMessage({ action: "hook", name: "mod-a.done" }), null, "no session id");
+  assert.equal(M.readHookMessage({ action: "hook", name: "", sid: "lead1" }), null);
+});

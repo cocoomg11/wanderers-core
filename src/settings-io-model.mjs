@@ -61,17 +61,48 @@ export function checkValue(def, value) {
 }
 
 /**
+ * A per-key check for settings whose shape `checkValue` can't see (Object and Array settings: records, tables, lists). Return
+ * `true` to accept the value, a string (the reason) or `false` to refuse it, or `{ ok: true, value }` to accept a cleaned copy.
+ * A validator that throws refuses the value; it never stops the import.
+ * @typedef {(value: unknown, def: SettingDef) => boolean | string | { ok: true, value: unknown } | { ok: false, reason: string }} SettingValidator
+ */
+
+/**
+ * Runs a validator safely.
+ * @param {SettingValidator | undefined} fn
+ * @param {unknown} value
+ * @param {SettingDef} def
+ * @returns {{ ok: true, value: unknown } | { ok: false, reason: string }}
+ */
+function runValidator(fn, value, def) {
+  if (typeof fn !== "function") return { ok: true, value };
+  try {
+    const r = fn(value, def);
+    if (r === true) return { ok: true, value };
+    if (r === false || r === undefined || r === null) return { ok: false, reason: "has the wrong shape" };
+    if (typeof r === "string") return { ok: false, reason: r || "has the wrong shape" };
+    if (typeof r === "object" && r.ok === true) return { ok: true, value: r.value };
+    if (typeof r === "object" && r.ok === false) return { ok: false, reason: String(r.reason || "has the wrong shape") };
+    return { ok: false, reason: "has the wrong shape" };
+  } catch (e) {
+    return { ok: false, reason: `couldn't be checked (${String(e?.message ?? e)})` };
+  }
+}
+
+/**
  * Reads one module's settings (file text or object) against the registered settings and current values. Unknown keys and invalid
  * values are reported and ignored; a key filed under the wrong scope is read from its real scope.
  * @param {string} moduleId
  * @param {unknown} input
  * @param {Map<string, SettingDef>} defs
  * @param {Record<string, unknown>} [current]
- * @param {{ skip?: Iterable<string>, requireModule?: boolean, label?: string }} [opts]
+ * @param {{ skip?: Iterable<string>, requireModule?: boolean, label?: string, validators?: Record<string, SettingValidator> }} [opts]
  *   requireModule (default true): the file's "module" must be `moduleId`. A hub bundle entry may omit it.
+ *   validators: optional per-key checks, run after the type check (meant for Object and Array settings). A refused value is
+ *   reported under `invalid` and not imported.
  * @returns {ImportResult}
  */
-export function readImport(moduleId, input, defs, current = {}, { skip = [], requireModule = true, label = moduleId } = {}) {
+export function readImport(moduleId, input, defs, current = {}, { skip = [], requireModule = true, label = moduleId, validators = {} } = {}) {
   /** @returns {ImportResult} */
   const fail = (/** @type {string} */ error) => ({ ok: false, error, version: "", rows: [], unknown: [], skipped: [], invalid: [] });
   /** @type {any} */
@@ -94,8 +125,11 @@ export function readImport(moduleId, input, defs, current = {}, { skip = [], req
       if (no.has(key)) { skipped.push(key); continue; }
       const def = defs.get(key);
       if (!def) { unknown.push(key); continue; }
-      const c = checkValue(def, value);
-      if (!c.ok) { invalid.push({ key, reason: c.reason }); continue; }
+      const c0 = checkValue(def, value);
+      if (!c0.ok) { invalid.push({ key, reason: c0.reason }); continue; }
+      const v = runValidator(Object.hasOwn(validators ?? {}, key) ? validators[key] : undefined, c0.value, def);
+      if (!v.ok) { invalid.push({ key, reason: v.reason }); continue; }
+      const c = { ...c0, value: v.value };
       const scope = def.scope === "world" ? "world" : "client";
       const from = current[key];
       rows.push({ key, scope, label: def.name || key, from, to: c.value, changed: JSON.stringify(from ?? null) !== JSON.stringify(c.value ?? null), note: [c.reason, scope !== bucket ? `filed under ${bucket}, applied as a ${scope} setting` : ""].filter(Boolean).join("; ") });
