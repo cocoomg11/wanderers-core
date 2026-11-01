@@ -3,7 +3,7 @@
 All notable changes to wanderers-core. Versions follow [STABILITY.md](STABILITY.md). Modules pick up a release only when they update
 their pin.
 
-## 0.1.0 (unreleased)
+## 0.1.0 (2026-11-01)
 
 First version, drawn from the copies in Wayfarer's Toolkit, Red Book and Wanderer's Satchel. Everything is experimental.
 
