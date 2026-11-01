@@ -2,7 +2,7 @@
   "name": "wanderers-core",
   "version": "0.3.1",
   "private": true,
-  "description": "Shared core library for cocoomg11's Foundry VTT modules, vendored and pinned into each module (no runtime dependency).",
+  "description": "Shared library for Foundry VTT modules, vendored and pinned into each module: common code plus an opt-in shared UI stylesheet and helpers (no runtime dependency).",
   "license": "MIT",
   "type": "module",
   "engines": { "node": ">=22" },

@@ -1,10 +1,13 @@
 # wanderers-core
 
-A small shared library for a family of Foundry VTT modules (v13 minimum, verified v14 build 369; any game system). It holds the
-patterns every module repeats: a feature registry, a settings table, a one-writer election with schema-checked socket requests,
-read-only health checks, cleanup plans, debug logging, settings files, update notes, version compare, capped record lists,
-schema-version normalizers, request rate limits, one shared Scene Configuration tab and an opt-in shared UI look (stylesheet +
-markup helpers, [docs/ui.md](docs/ui.md)).
+The shared code behind a family of Foundry VTT modules (v13 minimum, verified v14 build 369; any game system). Each module vendors a
+pinned copy, so core is a library, not something you install. It has two parts:
+
+- **Shared code** every module repeats: a feature registry, a settings table, a one-writer election with schema-checked socket
+  requests, read-only health checks, cleanup plans, debug logging, settings files, update notes, version compare, capped record
+  lists, schema-version normalizers, request rate limits and one shared Scene Configuration tab.
+- **An opt-in shared UI look**: a stylesheet that matches Foundry's own theme (light and dark) plus small markup helpers, so every
+  module's windows look alike. Nothing changes in a module until it adds the stylesheet ([docs/ui.md](docs/ui.md)).
 
 **Core is not a Foundry module.** Nobody installs it. Each module copies a pinned version into `vendor/wanderers-core/` and ships it
 inside its own zip, so every module stays standalone. CI in each module fails when the copy differs from its pin.
