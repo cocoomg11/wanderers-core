@@ -20,14 +20,14 @@ permissions:
 
 jobs:
   checks:
-    uses: cocoomg11/wanderers-core/.github/workflows/module-checks.yml@v0.4.0
+    uses: cocoomg11/wanderers-core/.github/workflows/module-checks.yml@v0.5.0
     # with:
     #   lint: false      # while the module still has lint errors to fix
     #   types: false     # while the module isn't JSDoc-clean yet
     #   remote: false    # skip checking the lock against the published release
 ```
 
-Pin the reusable workflow to a core release tag (`@v0.4.0`), not `@main`, so a core change can't alter a module's CI without a
+Pin the reusable workflow to a core release tag (`@v0.5.0`), not `@main`, so a core change can't alter a module's CI without a
 commit in the module. Dependabot (`github-actions` ecosystem) proposes the bump.
 
 The check name for branch protection is `checks / Core pin, lint, types and tests`.
@@ -65,10 +65,16 @@ Add `vendor` to the zip step (core is imported at run time from `vendor/wanderer
       - name: Build module.zip
         run: |
           zip -r module.zip module.json scripts styles lang vendor README.md CHANGELOG.md LICENSE \
-            -x 'vendor/wanderers-core/config/*' 'vendor/wanderers-core/vendor.mjs'
+            -x 'vendor/wanderers-core/config/*' 'vendor/wanderers-core/vendor.mjs' 'vendor/wanderers-core/testing/*'
 ```
 
-The zip leaves out `vendor/wanderers-core/config/` (shared ESLint, tsconfig and Foundry global declarations: dev tools only) and
-`vendor/wanderers-core/vendor.mjs` (the vendor tool: run from a checkout, never imported by the runtime). Nothing core's runtime
+The zip leaves out `vendor/wanderers-core/config/` (shared ESLint, tsconfig and Foundry global declarations: dev tools only),
+`vendor/wanderers-core/vendor.mjs` (the vendor tool: run from a checkout, never imported by the runtime) and, from core 0.5.0,
+`vendor/wanderers-core/testing/` (the Node test fakes, [testing.md](testing.md)). Nothing core's runtime
 imports lives in either, and `LICENSE` stays in the zip. Only the zip is slimmed: the vendored folder in the repo stays complete,
 because `verify` hashes every file in it.
+
+## Moving from 0.3.x to 0.5.0
+
+See [upgrading-0.5.md](upgrading-0.5.md): vendor update, `module-checks.yml@v0.5.0`, the `testing/` zip exclusion, stylesheet
+revision `wc-r3`, and the opt-in helpers (store, data folder, windows, keybindings, quality and coins, health fixes).

@@ -5,8 +5,8 @@ pinned copy, so core is a library, not something you install. It has two parts:
 
 - **Shared code** every module repeats: a feature registry, a settings table, a one-writer election with schema-checked socket
   requests, read-only health checks, cleanup plans, debug logging, settings files, update notes, version compare, capped record
-  lists, schema-version normalizers, request rate limits, one shared Scene Configuration tab, remembered window placement and
-  keybindings that open a module's windows.
+  lists, schema-version normalizers, request rate limits, one shared Scene Configuration tab, remembered window placement,
+  keybindings that open a module's windows, a GM-only store journal and Node test fakes.
 - **An opt-in shared UI look**: a stylesheet that matches Foundry's own theme (light and dark) plus small markup helpers, so every
   module's windows look alike. Nothing changes in a module until it adds the stylesheet ([docs/ui.md](docs/ui.md)).
 
@@ -18,20 +18,23 @@ inside its own zip, so every module stays standalone. CI in each module fails wh
 - [Shared Scene Configuration tab](#shared-scene-configuration-tab)
 - [Shared UI look](#shared-ui-look)
 - [Windows: placement and keybindings](#windows-placement-and-keybindings)
+- [GM-only store](#gm-only-store)
+- [Testing with core's fakes](#testing-with-cores-fakes)
 - [Vendor tool](#vendor-tool)
 - [Namespacing](#namespacing)
 - [What is deliberately not in core](#what-is-deliberately-not-in-core)
 - [Development](#development)
 - Policies: [CONVENTIONS.md](CONVENTIONS.md) (house practices), [STABILITY.md](STABILITY.md) (semver, deprecation),
   [docs/module-ci.md](docs/module-ci.md), [docs/branch-protection.md](docs/branch-protection.md), [docs/ui.md](docs/ui.md),
-  [docs/windows.md](docs/windows.md)
+  [docs/windows.md](docs/windows.md), [docs/store.md](docs/store.md), [docs/testing.md](docs/testing.md),
+  [docs/upgrading-0.5.md](docs/upgrading-0.5.md) (moving from 0.3.x straight to 0.5.0)
 
 ## Using core in a module
 
 1. **Vendor a release** (from the module's root folder; needs Node 22):
 
    ```sh
-   node path/to/wanderers-core/tools/vendor.mjs install 0.4.0   # a core checkout's copy of the tool
+   node path/to/wanderers-core/tools/vendor.mjs install 0.5.0   # a core checkout's copy of the tool
    ```
 
    This writes `vendor/wanderers-core/` and `wanderers-core.lock.json` (version, content hash, source). Commit both. From then on the
@@ -88,12 +91,13 @@ inside its own zip, so every module stays standalone. CI in each module fails wh
    ```yaml
    jobs:
      checks:
-       uses: cocoomg11/wanderers-core/.github/workflows/module-checks.yml@v0.4.0
+       uses: cocoomg11/wanderers-core/.github/workflows/module-checks.yml@v0.5.0
    ```
 
-5. **Release zip**: add `vendor` to the module's zip step, but leave out `vendor/wanderers-core/config/` (shared lint and type configs) and
-   `vendor/wanderers-core/vendor.mjs` (the vendor tool): only dev tools and CI use them, and Foundry never loads them
-   (`zip -r module.zip ... vendor ... -x 'vendor/wanderers-core/config/*' 'vendor/wanderers-core/vendor.mjs'`). Keep the vendored folder in the
+5. **Release zip**: add `vendor` to the module's zip step, but leave out `vendor/wanderers-core/config/` (shared lint and type configs),
+   `vendor/wanderers-core/vendor.mjs` (the vendor tool) and `vendor/wanderers-core/testing/` (Node test fakes, 0.5.0): only dev tools,
+   tests and CI use them, and Foundry never loads them
+   (`zip -r module.zip ... vendor ... -x 'vendor/wanderers-core/config/*' 'vendor/wanderers-core/vendor.mjs' 'vendor/wanderers-core/testing/*'`). Keep the vendored folder in the
    repo complete: the pin check hashes every file.
 
 6. **Shared look** (optional): list `vendor/wanderers-core/styles/wanderers-ui.css` in `module.json` `styles` and add `UI_CLASSES`
@@ -120,7 +124,7 @@ everything is experimental** (may change in a minor release, with a changelog no
 | One writer | `pickActiveGM`, `leaderOf`, `isLeader`, `aliveCutoff`, `prune`, `readSessionMessage`, `applySessionMessage`, `seenCache`, `requestId`, `makeRequestId`, `parseRequestId`, `readHookMessage`, `acceptHook`, `newId`, `compareSessions`, constants `HEARTBEAT_MS` `GRACE_MS` `SETTLE_MS` `SEEN_MAX` `ID_RE` `PASSIVE_MAX_AGE_MS` | experimental |
 | Rate limits | `rateLimiter({ burst, perSecond, maxKeys })` → `take(key, now)`, `left`, `clear`, `size`; `RATE_BURST`, `RATE_PER_SECOND` | experimental |
 | Socket requests | `defineRequests(schemas)`, `readRequest(schemas, msg)`, `makeRequest(schemas, kind, rid, data)`, `jsonBytes`, `MAX_BYTES`, `MAX_DEPTH` | experimental |
-| Health | `healthCollector({ timeoutMs })` → `add`, `section`, `check`, `checkAsync`, `report`; `worst`, `counts`, `level`, `LEVELS` | experimental |
+| Health | `healthCollector({ timeoutMs })` → `add(level, text, fix?)`, `section`, `check`, `checkAsync`, `report`; `worst`, `counts`, `level`, `LEVELS`; 0.5.0: `readFix(fix)`, `healthLine(level, text, fix?)`, `storableReport(report)`, `FIX_ACTION_RE`, `FIX_LABEL_MAX`, `FIX_CONFIRM_MAX` (lines may carry a `fix`: a function, an action id, or `{ label, run \| action, confirm }`) | experimental |
 | Cleanup | `CONFIRM_WORD`, `confirmed`, `hasFlags`, `dryRun(categories, plan)`, `picked`, `changedSettings`, `summary` | experimental |
 | Settings file | `SETTINGS_FORMAT`, `buildExport(id, values, opts)`, `readImport(id, input, defs, current, { skip, requireModule, label, validators })`, `checkValue`, `preview`, `fileName` | experimental |
 | Update notes | `decide({ stored, current, knownWorld })`, `entriesBetween`, `buildNotice({ notes, always, from, to, on, ctx })`, `lintNotes` | experimental |
@@ -130,6 +134,7 @@ everything is experimental** (may change in a minor release, with a changelog no
 | Window placement (pure) | `readPlacement`, `readPlacements`, `getPlacement`, `setPlacement`, `removePlacement`, `samePlacement`, `clampPlacement(placement, viewport, { scale, minWidth, minHeight, size })`, `placementOf`, `debouncer(fn, ms)`, `isWindowKey`, constants `PLACEMENT_SETTING` `PLACEMENT_VERSION` `PLACEMENT_MAX` `PLACEMENT_SAVE_MS` `PLACEMENT_MIN_SIZE` `WINDOW_KEY_RE` | experimental |
 | Keybindings (pure) | `defineOpenKeybinding(spec)`, `keybindingConfig(def, { isGM, onError })`, `KEY_MODIFIERS`, `ACTION_RE`, `KEY_CODE_RE` | experimental |
 | Scene tab (pure) | `defineSection`, `orderSections`, `upsertSection`, `ownField`, `createRegistry`, `usableRegistry`, `claimRegistry`, constants `SCENE_TAB_GLOBAL` `SCENE_TAB_VERSION` `SCENE_TAB_ID` `SCENE_TAB_LABEL` `SCENE_TAB_ICON` | experimental |
+| GM-only store (pure) | `defineStore(spec)`, `isStoreEntry`, `storeEntries`, `storeRawData`, `storeCreateData`, `needsFiling`, `storeKeys`, `storeGet`, `storeWith`, `storeWithKey`, `storeDeletions(prev, next, base, depth)`, `deletionKeys(paths, del)`, `storeSize`, constants `STORE_MAX_BYTES` `STORE_DELETE_DEPTH` `STORE_FILED_FLAG` ([docs/store.md](docs/store.md)) | experimental |
 | Module data folder (pure) | `pickDataFolder(folders)`, `dataFolderData()`, `dataFolderPlan({ folders, entry })`, `folderEmptyAfter(contentIds, removedIds)`, `dataFolderShown(answers)`, `dataFolderIds(folders, entries)`, constants `DATA_FOLDER_NAME` `DATA_FOLDER_TYPE` `DATA_FOLDER_SORT` `SHOW_SETTING` ([docs/data-folder.md](docs/data-folder.md)) | experimental |
 
 | Area | Exports (Foundry, `foundry/index.mjs`) | Status |
@@ -140,7 +145,12 @@ everything is experimental** (may change in a minor release, with a changelog no
 | Windows | `RememberedWindow(Base, { moduleId, key, size, minimized, saveMs })` → subclass with `placementKey`, `clampToViewport`, `resetPlacement`; `registerWindowPlacement(moduleId)`, `resetPlacement(moduleId, key?)`, `savedPlacement(moduleId, key)` | experimental |
 | Keybindings | `registerOpenKeybinding({ moduleId, action, name, hint, onDown, gmOnly, editable, precedence })` | experimental |
 | Module data folder | `ensureDataFolder(moduleId, { log })`, `fileInDataFolder(moduleId, entry, { log })`, `removeDataFolderIfEmpty(moduleId, removedIds, { log })`, `hideDataFolder(moduleId, { shown })`: one collapsed, sidebar-hidden "Module data" journal folder for modules' GM-only stores; tidiness only, not secrecy ([docs/data-folder.md](docs/data-folder.md)) | experimental |
+| GM-only store | `createStore(moduleId, { name, flagKey, entryFlag, normalize \| version+empty+upgrades+clean, keysAt, keys, maxBytes, deleteDepth, about, dataFolder, log, isWriter })` → `entry`, `read`, `get`, `update`, `set`, `setKey`, `ensure`, `file`, `remove`, `status`; ownership None is not secrecy ([docs/store.md](docs/store.md)) | experimental |
 | Scene tab | `sceneTab.addSection(id, { title, order, render, onSubmit })`, `sceneTab.removeSection(id)`, `sceneTab.sections()` | experimental |
+
+Test fakes (dev only, never imported at run time, left out of module zips): `testing/index.mjs` → `fakeWorld`, `installFakes`,
+`actAs`, `fakeSettings`, `fakeHooks`, `fakeCollection`, `FakeApplicationV2`, `applyUpdate`, `fakeId`, `OWNERSHIP`, `FAKE_DEL`
+([docs/testing.md](docs/testing.md)). Not part of the runtime API.
 
 Formats (versioned, see STABILITY.md): settings file `format` 1; socket envelopes `request` / `leader` / `hook`; release bundle
 `format` 1; lock file `lockVersion` 1; scene tab registry `version` 1; window placement setting `v` 1; shared stylesheet revision `UI_REVISION` 3 (`wc-r3`).
@@ -265,6 +275,34 @@ Hooks.once("init", () => {
   `position.left`/`top` keeps that position. `resetPlacement(ID, key?)` forgets one or all.
 - Keybindings register with **no key** unless the module passes `editable`; `gmOnly` maps to Foundry's `restricted`. Call in `init`.
 
+## GM-only store
+
+```js
+export const Store = createStore(ID, { name: "My Module (GM only)", version: 1, empty: () => ({ notes: {} }), keys: ["notes"], isWriter: leader.isLeader });
+Store.get("notes", {});                    // GM: cached copy; players: the fallback
+await Store.setKey("notes", id, { text }); // GM only, chained; null removes
+await Store.file();                        // writer, at ready: a root-level entry moves into "Module data" once
+```
+
+One JournalEntry per module, default ownership None, data in `flags.<ID>.<flagKey>`, found by a marker flag or by the data flag
+(configurable, so a module's existing store is found as it is). Created on the first write inside the "Module data" folder; writes are
+chained, normalized, size-checked and delete removed keys. **Ownership None is not secrecy**: the entry is still sent to every
+player's client (checked on 14.369); it is an honour system that keeps GM-only data out of settings and player-facing windows. Full
+guide and per-module adoption: [docs/store.md](docs/store.md).
+
+## Testing with core's fakes
+
+`vendor/wanderers-core/testing/index.mjs` exports the fakes core's own tests use: a fake world (`game` with users, settings, modules,
+journal, folders, socket; `Hooks`; `JournalEntry` / `Folder` documents with flags, updates and ownership) and an ApplicationV2 base.
+Use them in a module's Node tests; **never import them from runtime code**. Module zips leave the folder out. See
+[docs/testing.md](docs/testing.md).
+
+```js
+import { fakeWorld, installFakes, actAs } from "../vendor/wanderers-core/testing/index.mjs";
+const world = fakeWorld({ users: [{ name: "GM", isGM: true }, { name: "Pat" }] });
+const restore = installFakes(world, world.users.contents[0]);
+```
+
 ## Vendor tool
 
 `tools/vendor.mjs` (copied into each module as `vendor/wanderers-core/vendor.mjs`); Node 22, no packages.
@@ -307,7 +345,7 @@ Two modules may bundle different core versions in one world. Core is safe for th
 |---|---|
 | Control panel and other windows (ApplicationV2 classes, pages, wording) | Each module's pages and tabs differ; windows can't be tested in Node. Core shares only the look (stylesheet, tokens, small markup helpers) and the Scene Configuration tab, which only works if it is shared. |
 | Cleanup window, update-notes chat card, settings import preview | Wording and categories are per module; core gives the pure parts (plan, dry run, confirm word, notice, file format). |
-| Hub registry and update check over the network | Only the hub module needs them; the CORS workaround is specific to it. |
+| Hub registry and update check over the network | Only the hub module needs them; the CORS workaround is specific to it. Core only keeps a health line's `fix` intact; running fixes is the hub's job. |
 | Permission checks, scene checks, game rules | Module-specific; rules text stays SRD-only in the modules that need it. |
 | Dialog and folder helpers (`ui.mjs`) | Thin Foundry calls that vary per module; not worth a shared contract yet. |
 | A runtime dependency or a core Foundry module | Decided: each module stays standalone. |
@@ -323,6 +361,20 @@ npm run types     # JSDoc type check (tsc --noEmit with checkJs)
 npm test          # node --test
 npm run bundle    # dist/wanderers-core-X.Y.Z.json
 ```
+
+**Open dev-only alert (0.5.0): minimatch.** Dependabot's moderate alert for `minimatch` (GHSA-g3hv-75wg-m249, fixed in 11.0.1) comes
+through `eslint` and `@eslint/config-array`, which still ask for `^10.2.x` (eslint 10.14.0 too), so a plain version bump doesn't clear
+it. It only affects the lint step (nothing ships to Foundry). On a machine with npm registry access, from the core checkout:
+
+```sh
+npm pkg set overrides.minimatch=11.0.3
+npm install --package-lock-only --ignore-scripts
+npm ci && npm run ci          # lint must still pass with minimatch 11 under eslint
+git add package.json package-lock.json && git commit -m "Dev tools: minimatch 11.0.3 override (GHSA-g3hv-75wg-m249)"
+```
+
+If `npm run lint` fails with minimatch 11, undo (`npm pkg delete overrides`, `git checkout package-lock.json`) and dismiss the alert
+as "tolerable risk, dev only" until eslint takes minimatch 11. Drop the override once eslint's own range includes the fix.
 
 Releases: bump `version` in `package.json` (and `package-lock.json`) and `CORE_VERSION` in `src/version.mjs`, add a CHANGELOG
 section, push. The user publishes a GitHub release tagged `vX.Y.Z`; the Release workflow checks and builds the bundle in a read-only

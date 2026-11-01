@@ -16,7 +16,7 @@ export {
 } from "./leader-model.mjs";
 export { RATE_BURST, RATE_PER_SECOND, rateLimiter } from "./rate-model.mjs";
 export { MAX_BYTES, MAX_DEPTH, defineRequests, readRequest, makeRequest, jsonBytes } from "./socket-model.mjs";
-export { LEVELS, level, healthCollector, worst, counts } from "./health-model.mjs";
+export { LEVELS, level, healthCollector, worst, counts, FIX_ACTION_RE, FIX_LABEL_MAX, FIX_CONFIRM_MAX, readFix, healthLine, storableReport } from "./health-model.mjs";
 export { CONFIRM_WORD, confirmed, hasFlags, dryRun, picked, changedSettings, summary } from "./cleanup-model.mjs";
 export { FORMAT as SETTINGS_FORMAT, buildExport, checkValue, readImport, preview, fileName } from "./settings-io-model.mjs";
 export { decide, entriesBetween, buildNotice, lintNotes } from "./notes-model.mjs";
@@ -33,3 +33,7 @@ export {
 } from "./window-model.mjs";
 export { KEY_MODIFIERS, ACTION_RE, KEY_CODE_RE, defineOpenKeybinding, keybindingConfig } from "./keybinding-model.mjs";
 export { DATA_FOLDER_NAME, DATA_FOLDER_TYPE, DATA_FOLDER_SORT, pickDataFolder, dataFolderData, dataFolderPlan, folderEmptyAfter, SHOW_SETTING, dataFolderShown, dataFolderIds } from "./data-folder-model.mjs";
+export {
+  STORE_MAX_BYTES, STORE_DELETE_DEPTH, STORE_FILED_FLAG, defineStore, isStoreEntry, storeEntries, rawData as storeRawData, storeCreateData,
+  needsFiling, storeKeys, storeGet, storeWith, storeWithKey, storeDeletions, deletionKeys, storeSize
+} from "./store-model.mjs";

@@ -29,7 +29,7 @@ test("unsafe bundle paths are refused", () => {
 test("the bundle holds src, config, the tool and the licence, and checks itself", () => {
   const b = V.buildBundle(CORE);
   assert.equal(b.version, JSON.parse(readFileSync(join(CORE, "package.json"), "utf8")).version);
-  for (const p of ["index.mjs", "socket-model.mjs", "window-model.mjs", "keybinding-model.mjs", "foundry/leader.mjs", "foundry/window.mjs", "foundry/keybinding.mjs", "config/eslint.base.mjs", "vendor.mjs", "LICENSE"]) assert.ok(p in b.files, p);
+  for (const p of ["index.mjs", "store-model.mjs", "foundry/store.mjs", "testing/index.mjs", "socket-model.mjs", "window-model.mjs", "keybinding-model.mjs", "foundry/leader.mjs", "foundry/window.mjs", "foundry/keybinding.mjs", "config/eslint.base.mjs", "vendor.mjs", "LICENSE"]) assert.ok(p in b.files, p);
   assert.ok(!Object.keys(b.files).some(p => p.startsWith("tests/") || p.includes("node_modules")));
   assert.deepEqual(V.checkBundle(b, b.version), []);
   assert.match(V.checkBundle(b, "9.9.9")[0], /not 9.9.9/);

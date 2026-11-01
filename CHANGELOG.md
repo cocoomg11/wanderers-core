@@ -3,6 +3,68 @@
 All notable changes to wanderers-core. Versions follow [STABILITY.md](STABILITY.md). Modules pick up a release only when they update
 their pin.
 
+## 0.5.0 (2026-11-01)
+
+The release every module moves to in one step (from 0.3.x straight to 0.5.0; it contains 0.4.0): health lines keep a `fix`, a shared
+GM-only store journal, and the test fakes core's own tests use. Everything stays experimental. Move with
+`node vendor/wanderers-core/vendor.mjs update 0.5.0` and `module-checks.yml@v0.5.0`; step by step in
+[docs/upgrading-0.5.md](docs/upgrading-0.5.md) (zip exclusion for `testing/`, `wc-r3`, store adoption per module, data folder,
+windows, keybindings, quality and coins). The stylesheet is unchanged from 0.4.0 (`UI_REVISION` 3).
+
+### Added
+
+- **Health fix pass-through** (`health-model.mjs`): `healthCollector`'s `add(level, text, fix?)` (also inside `check` / `checkAsync`)
+  keeps an optional fix on the line, read by `readFix`: a function, an action id (`FIX_ACTION_RE`, 1 to 64 of `A-Za-z0-9_.:-`) or
+  `{ label, run | action, confirm? }` (labels and confirm texts plain, cut to 60 / 500 characters; unusable fixes are dropped). Same
+  rules as the Wanderer's Satchel's reader, so lines reach the hub unchanged. Lines without a fix keep the old shape. `healthLine(level,
+  text, fix?)` builds one line for hand-made reports and plain-text conversions; `storableReport(report)` is the copy to store or send
+  (fix functions removed, action ids kept). `report()` now returns copies of the lines.
+- **GM-only store** ([docs/store.md](docs/store.md)): `createStore(moduleId, { name, flagKey, entryFlag, normalize | version + empty +
+  upgrades + clean, keysAt, keys, maxBytes, deleteDepth, about, dataFolder, log, isWriter })` (Foundry) → `entry`, `read`, `get`,
+  `update` (chained, may be async), `set`, `setKey`, `ensure`, `file`, `remove`, `status`. One None-ownership journal per module, found
+  by a marker flag (`entryFlag`, default `storeEntry`) or by the data flag (`entryFlag: null`), so the toolkit's vault, Red Book's and
+  the Satchel's existing stores are found as they are. Created on the first GM write inside "Module data"; `file()` (writer only) moves
+  an existing root-level entry there once and marks it `flags.<id>.dataFolderFiled`, so a GM's later move is kept. Writes are
+  normalized, size-checked (`STORE_MAX_BYTES` 8 MiB by default) and delete removed keys (v14 `_del` when present, else `-=`; depth
+  `STORE_DELETE_DEPTH` 3). Players never read it (`get` returns the fallback) or write it. `remove()` deletes every copy and the
+  folder when empty. Documented plainly: **ownership None is not secrecy** (sent to every client; honour system).
+- Pure store helpers (`store-model.mjs`): `defineStore` (throws on bad definitions), `isStoreEntry`, `storeEntries`, `storeRawData`,
+  `storeCreateData`, `needsFiling`, `storeKeys`, `storeGet`, `storeWith`, `storeWithKey`, `storeDeletions`, `deletionKeys`, `storeSize`,
+  constants `STORE_MAX_BYTES`, `STORE_DELETE_DEPTH`, `STORE_FILED_FLAG`.
+- **Test fakes** ([docs/testing.md](docs/testing.md)): `testing/index.mjs` (vendored as `vendor/wanderers-core/testing/`): `fakeWorld`,
+  `installFakes`, `actAs`, `fakeSettings`, `fakeHooks`, `fakeCollection`, `FakeApplicationV2`, `applyUpdate`, `fakeId`, `OWNERSHIP`,
+  `FAKE_DEL`. Dev only: not exported from either index, never imported at run time; module zips exclude it
+  (`-x 'vendor/wanderers-core/testing/*'`, docs/module-ci.md). Not part of the public API.
+- Docs: [docs/store.md](docs/store.md), [docs/testing.md](docs/testing.md), [docs/upgrading-0.5.md](docs/upgrading-0.5.md); module-ci.md
+  pins `@v0.5.0` and adds the zip exclusion.
+- Tests: `tests/v050.test.mjs` (fix reading and pass-through, storable copies, store model, `createStore` on the shared fakes:
+  creation in the folder, existing stores found and filed once, the GM's folder kept, failed moves retried, chained concurrent writes,
+  failures don't break the chain, both deletion syntaxes, size limit, players refused, remove and folder cleanup; the fakes themselves,
+  and `RememberedWindow` on `FakeApplicationV2`).
+
+### Security
+
+- Dev dependencies only (nothing ships to Foundry): Dependabot's moderate alert for `minimatch` (via `eslint` and
+  `@eslint/config-array`; GHSA-g3hv-75wg-m249, fixed in minimatch 11.0.1) is not resolved in this release. eslint 10.14.0 still asks for
+  `minimatch ^10.2.6`, so the fix needs an npm `overrides` entry, and the lockfile could not be regenerated where this release was made
+  (no npm registry access). Steps in the README *Development* section (`npm pkg set overrides.minimatch=11.0.3`, `npm install --package-lock-only --ignore-scripts`, `npm ci && npm run ci`).
+
+### Untested in Foundry
+
+- [ ] `createStore` on v13 and v14 with a module's real store: the existing entry is found (toolkit `vaultEntry`, Red Book data flag,
+  Satchel `storeEntry`), nothing renamed; `file()` on the writer moves a root-level entry into "Module data" once; moving it back to
+  the root by hand stays put after a reload.
+- [ ] First write in a fresh world creates one entry inside "Module data" with default ownership None and the About page; two GM tabs
+  writing at once leave one entry (or `status().count` 2, and both are removed by `remove()`).
+- [ ] A removed key is really gone after `setKey(..., null)` on v14 (`_del` operator) and on v13 (`-=` key), after a reload.
+- [ ] `_stats.modifiedTime` changes on every journal update in v13 and v14 (the read cache relies on it with in-place merges).
+- [ ] A player client: `Store.get` gives the fallback, `Store.set` rejects, no journal appears in their sidebar; the data is still
+  readable from their console (expected; documented).
+- [ ] `remove()` deletes the entry and the "Module data" folder only when no other module's entry is in it.
+- [ ] A health line with `{ fix: { label, action } }` from `healthCollector` shows a Fix button in the Wanderer's Satchel and runs the
+  registration's fix; a chat card built from `storableReport` has no functions in its flags.
+- [ ] A module zip built with the `testing/*` exclusion loads without errors (nothing imports it).
+
 ## 0.4.0 (2026-11-01)
 
 Two opt-in window helpers; everything stays experimental. Nothing changes for a module until it uses them: move with

@@ -16,8 +16,10 @@ says what a version number promises to the person updating a pin.
 - The shared stylesheet's contract: its path (`styles/wanderers-ui.css`), the root classes (`UI_CLASSES`), and the class and token
   names listed in docs/ui.md for the current `UI_REVISION`.
 - The vendor tool's commands and options, and `config/` (ESLint config function, tsconfig base).
-- Not public: anything not exported from those two index files, internal helpers, test files, error message wording (but messages
-  stay plain English).
+- Not public: anything not exported from those two index files, internal helpers, test files, the test fakes in `testing/index.mjs`
+  (dev only; may change in any release), error message wording (but messages stay plain English).
+- The GM-only store's stored marks: `flags.<moduleId>.<entryFlag>`, `flags.<moduleId>.<flagKey>` (the module's own shape) and
+  `flags.<moduleId>.dataFolderFiled` (0.5.0) are read by later versions as they are written now.
 
 Each export is marked **stable** or **experimental** in the README *Public API* table.
 
@@ -25,8 +27,8 @@ Each export is marked **stable** or **experimental** in the README *Public API* 
 - **Experimental**: may change in a minor release; the changelog says how. New exports start experimental.
 
 While core is `0.x`, everything is experimental unless the README marks it stable, and a minor release (0.1 → 0.2) may break.
-As of 0.4.0 nothing is marked stable: every export, including the scene tab, rate limit, the shared UI look, window placement and
-keybindings, is experimental.
+As of 0.5.0 nothing is marked stable: every export, including the scene tab, rate limit, the shared UI look, window placement,
+keybindings, the GM-only store and the health fix field, is experimental.
 From 1.0.0 the rules below are strict.
 
 ## What counts as breaking (needs a major version)
