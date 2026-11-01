@@ -35,31 +35,46 @@ jobs:
     name: Core pin, lint, types and tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ inputs.node-version }}
       # The checker comes from core itself at the pinned tag, not from the module's vendored copy, so an edited vendored
       # vendor.mjs can't approve itself. A local (unreleased) pin has no tag yet: its own copy checks it, with a warning.
       - name: Read the pin
         id: pin
+        env:
+          CORE_LOCK: ${{ inputs.core-lock }}
+        # Values from the lock file are data from the module (or a pull request): they go to later steps through env, never into
+        # a script, and are checked against a strict pattern first.
         run: |
-          test -f "${{ inputs.core-lock }}" || { echo "::error title=wanderers-core::no ${{ inputs.core-lock }} in this module"; exit 1; }
-          echo "version=$(jq -r .version '${{ inputs.core-lock }}')" >> "$GITHUB_OUTPUT"
-          echo "source=$(jq -r .source '${{ inputs.core-lock }}')" >> "$GITHUB_OUTPUT"
+          test -f "$CORE_LOCK" || { echo "::error title=wanderers-core::no $CORE_LOCK in this module"; exit 1; }
+          VERSION="$(jq -r '.version // ""' "$CORE_LOCK")"
+          SOURCE="$(jq -r '.source // ""' "$CORE_LOCK")"
+          if [[ ! "$SOURCE" =~ ^(release|local)$ ]]; then echo "::error title=wanderers-core::the lock's source should be release or local"; exit 1; fi
+          if [[ ! "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then echo "::error title=wanderers-core::the lock's version should be X.Y.Z"; exit 1; fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "source=$SOURCE" >> "$GITHUB_OUTPUT"
       - name: Fetch core's checker at the pinned version
         if: steps.pin.outputs.source == 'release'
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: cocoomg11/wanderers-core
           ref: v${{ steps.pin.outputs.version }}
           path: .wanderers-core-checker
           persist-credentials: false
       - name: Vendored wanderers-core matches its pin
+        env:
+          CORE_DIR: ${{ inputs.core-dir }}
+          CORE_LOCK: ${{ inputs.core-lock }}
+          PIN_SOURCE: ${{ steps.pin.outputs.source }}
+          REMOTE: ${{ inputs.remote && '--remote' || '' }}
         run: |
-          TOOL="${{ inputs.core-dir }}/vendor.mjs"
-          if [ "${{ steps.pin.outputs.source }}" = "release" ]; then TOOL=".wanderers-core-checker/tools/vendor.mjs"; fi
-          node "$TOOL" verify --dir "${{ inputs.core-dir }}" --lock "${{ inputs.core-lock }}" ${{ inputs.remote && '--remote' || '' }}
+          TOOL="$CORE_DIR/vendor.mjs"
+          if [ "$PIN_SOURCE" = "release" ]; then TOOL=".wanderers-core-checker/tools/vendor.mjs"; fi
+          node "$TOOL" verify --dir "$CORE_DIR" --lock "$CORE_LOCK" $REMOTE
           rm -rf .wanderers-core-checker
       - name: Install dev tools
         run: if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; elif [ -f package.json ]; then npm install --no-audit --no-fund; fi
