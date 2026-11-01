@@ -130,6 +130,7 @@ everything is experimental** (may change in a minor release, with a changelog no
 | Window placement (pure) | `readPlacement`, `readPlacements`, `getPlacement`, `setPlacement`, `removePlacement`, `samePlacement`, `clampPlacement(placement, viewport, { scale, minWidth, minHeight, size })`, `placementOf`, `debouncer(fn, ms)`, `isWindowKey`, constants `PLACEMENT_SETTING` `PLACEMENT_VERSION` `PLACEMENT_MAX` `PLACEMENT_SAVE_MS` `PLACEMENT_MIN_SIZE` `WINDOW_KEY_RE` | experimental |
 | Keybindings (pure) | `defineOpenKeybinding(spec)`, `keybindingConfig(def, { isGM, onError })`, `KEY_MODIFIERS`, `ACTION_RE`, `KEY_CODE_RE` | experimental |
 | Scene tab (pure) | `defineSection`, `orderSections`, `upsertSection`, `ownField`, `createRegistry`, `usableRegistry`, `claimRegistry`, constants `SCENE_TAB_GLOBAL` `SCENE_TAB_VERSION` `SCENE_TAB_ID` `SCENE_TAB_LABEL` `SCENE_TAB_ICON` | experimental |
+| Module data folder (pure) | `pickDataFolder(folders)`, `dataFolderData()`, `dataFolderPlan({ folders, entry })`, `folderEmptyAfter(contentIds, removedIds)`, `dataFolderShown(answers)`, `dataFolderIds(folders, entries)`, constants `DATA_FOLDER_NAME` `DATA_FOLDER_TYPE` `DATA_FOLDER_SORT` `SHOW_SETTING` ([docs/data-folder.md](docs/data-folder.md)) | experimental |
 
 | Area | Exports (Foundry, `foundry/index.mjs`) | Status |
 |---|---|---|
@@ -138,6 +139,7 @@ everything is experimental** (may change in a minor release, with a changelog no
 | Cleanup | `worldDocuments()`, `flaggedDocuments(ns, filter)`, `unsetFlags(ns, uuids)`, `resetSettings(ns, keys)` | experimental |
 | Windows | `RememberedWindow(Base, { moduleId, key, size, minimized, saveMs })` → subclass with `placementKey`, `clampToViewport`, `resetPlacement`; `registerWindowPlacement(moduleId)`, `resetPlacement(moduleId, key?)`, `savedPlacement(moduleId, key)` | experimental |
 | Keybindings | `registerOpenKeybinding({ moduleId, action, name, hint, onDown, gmOnly, editable, precedence })` | experimental |
+| Module data folder | `ensureDataFolder(moduleId, { log })`, `fileInDataFolder(moduleId, entry, { log })`, `removeDataFolderIfEmpty(moduleId, removedIds, { log })`, `hideDataFolder(moduleId, { shown })`: one collapsed, sidebar-hidden "Module data" journal folder for modules' GM-only stores; tidiness only, not secrecy ([docs/data-folder.md](docs/data-folder.md)) | experimental |
 | Scene tab | `sceneTab.addSection(id, { title, order, render, onSubmit })`, `sceneTab.removeSection(id)`, `sceneTab.sections()` | experimental |
 
 Formats (versioned, see STABILITY.md): settings file `format` 1; socket envelopes `request` / `leader` / `hook`; release bundle

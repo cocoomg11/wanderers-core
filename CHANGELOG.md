@@ -35,6 +35,7 @@ Guides: [docs/windows.md](docs/windows.md), [docs/ui.md](docs/ui.md).
   `coins(amount, { zero, ratio, cls })` (markup with CSS-drawn coin dots, no image files), `COIN_RATIO` 100. Amounts are whole copper; the
   `ratio` (copper per silver and silver per gold) defaults to the three-coin economy of the Wayfarer's Toolkit (1 gold = 10000 copper),
   so a module switching from its own formatter keeps its amounts. Stylesheet: `wc-coins`, `wc-coin`, `wc-coin-icon`.
+- **Module data folder** ([docs/data-folder.md](docs/data-folder.md)): `ensureDataFolder`, `fileInDataFolder`, `removeDataFolderIfEmpty`, `hideDataFolder(moduleId, { shown })` (Foundry) and pure `pickDataFolder`, `dataFolderData`, `dataFolderPlan`, `folderEmptyAfter`, `dataFolderShown`, `dataFolderIds`, `DATA_FOLDER_NAME` etc. One "Module data" journal folder (matched by name, type, root; no flag) holds modules' GM-only store journals and is hidden from the Journal sidebar unless a module's "Show module data" switch (`<moduleId>.showModuleData`) is on. Tidiness only, not secrecy. Tests: `tests/data-folder.test.mjs`.
 - `UI_REVISION` 3, `UI_CLASSES` `["wc-ui", "wc-r3"]`; revision 3's hash recorded in `tests/ui.test.mjs` (revisions 1 and 2 kept).
 - Tests: `tests/quality-coins.test.mjs`; `tests/window.test.mjs` (models, plus the mixin and keybinding wiring against a fake ApplicationV2 and `game`).
 
@@ -55,6 +56,9 @@ Guides: [docs/windows.md](docs/windows.md), [docs/ui.md](docs/ui.md).
 - [ ] `quality(item.system.rarity)` on real dnd5e items (mundane, veryRare, artifact): the keys match the colours.
 - [ ] `registerOpenKeybinding` in `init`: the action shows under the module in Configure Controls with no key; assigning a key opens
   the window; a `gmOnly` action is hidden from and refused for players; an error in `onDown` only logs.
+- [ ] `fileInDataFolder`: a root-level store journal moves into a new "Module data" folder at the bottom of the Journal tab (manual sort, high `sort`); one already in the GM's own folder stays; a second module reuses the folder.
+- [ ] `hideDataFolder` on v13 and v14: `renderJournalDirectory` fires with the directory element (`[data-folder-id]`, `[data-entry-id]` selectors match), the folder and its entries are gone from the sidebar for a GM, and sidebar search does not list them; with a module's `showModuleData` on (and the directory re-rendered) they show.
+- [ ] `removeDataFolderIfEmpty` keeps the folder while another module's entry is inside, deletes it when empty. Players get no folder changes.
 
 ## 0.3.1 (2026-11-01)
 

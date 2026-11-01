@@ -9,3 +9,4 @@ export { worldDocuments, flaggedDocuments, unsetFlags, resetSettings } from "./c
 export { sceneTab } from "./scene-tab.mjs";
 export { RememberedWindow, registerWindowPlacement, resetPlacement, savedPlacement } from "./window.mjs";
 export { registerOpenKeybinding } from "./keybinding.mjs";
+export { ensureDataFolder, fileInDataFolder, removeDataFolderIfEmpty, hideDataFolder } from "./data-folder.mjs";

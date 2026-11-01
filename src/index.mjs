@@ -32,3 +32,4 @@ export {
   readPlacements, getPlacement, setPlacement, removePlacement, samePlacement, clampPlacement, placementOf, debouncer
 } from "./window-model.mjs";
 export { KEY_MODIFIERS, ACTION_RE, KEY_CODE_RE, defineOpenKeybinding, keybindingConfig } from "./keybinding-model.mjs";
+export { DATA_FOLDER_NAME, DATA_FOLDER_TYPE, DATA_FOLDER_SORT, pickDataFolder, dataFolderData, dataFolderPlan, folderEmptyAfter, SHOW_SETTING, dataFolderShown, dataFolderIds } from "./data-folder-model.mjs";

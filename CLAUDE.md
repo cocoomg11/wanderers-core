@@ -13,7 +13,7 @@ installed in Foundry). Public repo, MIT. Read CONVENTIONS.md (house practices) a
   `notes-model.mjs`, `rate-model.mjs` (`rateLimiter`), `scene-tab-model.mjs` (shared scene tab registry and ordering), `ui-model.mjs`
   (`UI_REVISION`, `UI_CLASSES`, `badge`/`icon`/`dot`/`statusLine`/`navItem` markup helpers), `quality-model.mjs` (`QUALITIES`, `quality(rarity)`, `itemSlot`), `coins-model.mjs` (`formatCoins`/`toCopper`/`fromCopper`/`coins`;
   whole copper, `ratio` default 100 = the toolkit's three-coin economy), `window-model.mjs` (placement store,
-  `readPlacements`, `clampPlacement`, `debouncer`), `keybinding-model.mjs` (`defineOpenKeybinding`, `keybindingConfig`).
+  `readPlacements`, `clampPlacement`, `debouncer`), `keybinding-model.mjs` (`defineOpenKeybinding`, `keybindingConfig`), `data-folder-model.mjs` (`pickDataFolder`, `dataFolderPlan`, `folderEmptyAfter`, `dataFolderShown`, `dataFolderIds`).
 - `styles/wanderers-ui.css` the opt-in shared look (ships as `vendor/wanderers-core/styles/`; docs/ui.md). Scoped under
   `.wc-ui.wc-r<UI_REVISION>`; any edit bumps `UI_REVISION` and the hash in `tests/ui.test.mjs`; only Foundry variables (checked live
   on 14.369), hex only as var() fallbacks.
@@ -21,13 +21,13 @@ installed in Foundry). Public repo, MIT. Read CONVENTIONS.md (house practices) a
   `createSettings`, `createLogger`, setting readers), `foundry/cleanup.mjs` (flag walk, unset, reset), `foundry/scene-tab.mjs`
   (`sceneTab`, the shared "Table Tools" tab via the `renderSceneConfig` hook), `foundry/window.mjs` (`RememberedWindow` mixin over
   documented ApplicationV2 methods `_initializeApplicationOptions`/`_onFirstRender`/`_onPosition`/`minimize`/`maximize`/`_onClose`;
-  state set during the constructor lives in a WeakMap, not private fields), `foundry/keybinding.mjs` (`registerOpenKeybinding`).
+  state set during the constructor lives in a WeakMap, not private fields), `foundry/keybinding.mjs` (`registerOpenKeybinding`), `foundry/data-folder.mjs` (`ensureDataFolder`, `fileInDataFolder`, `removeDataFolderIfEmpty`, `hideDataFolder`: shared "Module data" journal folder, matched by name+type+root, no flag; tidiness only, not secrecy).
 - `tools/vendor.mjs` install/update/verify/bundle (Node only, no packages; also shipped as `vendor/wanderers-core/vendor.mjs`).
 - `config/` shared `eslint.base.mjs`, `tsconfig.base.json`, `foundry-globals.d.ts` (shipped to modules).
 - `tests/*.test.mjs`; `foundry-fake.test.mjs` runs the Foundry halves against a fake `game` (wiring only, not Foundry).
 - `.github/workflows/`: `test.yml`, `release.yml`, `module-checks.yml` (reusable, called by modules). `.github/dependabot.yml`.
 - Docs: README (Public API, quick start), CONVENTIONS.md, STABILITY.md, CHANGELOG.md, `docs/module-ci.md`, `docs/branch-protection.md`,
-  `docs/ui.md` (shared look: classes, tokens, markup, adoption), `docs/windows.md` (remembered placement, open keybindings).
+  `docs/ui.md` (shared look: classes, tokens, markup, adoption), `docs/windows.md` (remembered placement, open keybindings), `docs/data-folder.md` (Module data folder).
 
 ## Key patterns
 - **Namespacing is a hard rule**: no globals (one exception: the scene tab registry `globalThis.__wanderersSceneTab`, versioned), no localStorage, no shared settings/flags/socket channels/hooks. Every Foundry-facing
