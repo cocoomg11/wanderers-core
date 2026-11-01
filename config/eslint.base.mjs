@@ -31,7 +31,7 @@ const COMMON = ["console", "setTimeout", "clearTimeout", "setInterval", "clearIn
 /** Browser globals a Foundry module uses. */
 const BROWSER = ["window", "document", "navigator", "location", "localStorage", "sessionStorage", "HTMLElement", "HTMLInputElement",
   "HTMLFormElement", "Element", "Node", "DocumentFragment", "CustomEvent", "MouseEvent", "KeyboardEvent", "FormData", "File",
-  "FileReader", "Image", "requestAnimationFrame", "cancelAnimationFrame", "getComputedStyle", "MutationObserver", "ResizeObserver",
+  "FileReader", "Image", "HTMLFieldSetElement", "requestAnimationFrame", "cancelAnimationFrame", "getComputedStyle", "MutationObserver", "ResizeObserver",
   "IntersectionObserver", "addEventListener", "removeEventListener", "DOMParser", "CSS", "WebSocket"];
 /** Foundry VTT globals (v13/v14). Read-only: assigning to one is an error. */
 const FOUNDRY = ["game", "ui", "canvas", "CONFIG", "CONST", "Hooks", "foundry", "fromUuid", "fromUuidSync", "Actor", "Item", "Scene",

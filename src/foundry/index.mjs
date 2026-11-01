@@ -6,3 +6,4 @@
 export { createLeader } from "./leader.mjs";
 export { createFeatures, createSettings, createLogger, getSetting, settingValues, settingDefs } from "./module.mjs";
 export { worldDocuments, flaggedDocuments, unsetFlags, resetSettings } from "./cleanup.mjs";
+export { sceneTab } from "./scene-tab.mjs";

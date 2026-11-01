@@ -20,3 +20,7 @@ export { LEVELS, level, healthCollector, worst, counts } from "./health-model.mj
 export { CONFIRM_WORD, confirmed, hasFlags, dryRun, picked, changedSettings, summary } from "./cleanup-model.mjs";
 export { FORMAT as SETTINGS_FORMAT, buildExport, checkValue, readImport, preview, fileName } from "./settings-io-model.mjs";
 export { decide, entriesBetween, buildNotice, lintNotes } from "./notes-model.mjs";
+export {
+  SCENE_TAB_GLOBAL, SCENE_TAB_VERSION, SCENE_TAB_ID, SCENE_TAB_LABEL, SCENE_TAB_ICON, defineSection, orderSections, upsertSection, ownField,
+  createRegistry, usableRegistry, claimRegistry
+} from "./scene-tab-model.mjs";
