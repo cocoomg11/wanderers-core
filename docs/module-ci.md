@@ -55,14 +55,18 @@ If a module prefers its own steps, the one line that matters is:
 
 ## The module's Release workflow
 
-Add `vendor` to the zip step (core is imported at run time from `vendor/wanderers-core/`), and run the pin check there too:
+Add `vendor` to the zip step (core is imported at run time from `vendor/wanderers-core/`), excluding the parts Foundry never loads, and run the pin check there too:
 
 ```yaml
       - name: Vendored wanderers-core matches its pin
         run: node vendor/wanderers-core/vendor.mjs verify --remote
       - name: Build module.zip
-        run: zip -r module.zip module.json scripts styles lang vendor README.md CHANGELOG.md LICENSE
+        run: |
+          zip -r module.zip module.json scripts styles lang vendor README.md CHANGELOG.md LICENSE \
+            -x 'vendor/wanderers-core/config/*' 'vendor/wanderers-core/vendor.mjs'
 ```
 
-To keep the zip small, a module may zip only `vendor/wanderers-core/*.mjs vendor/wanderers-core/foundry vendor/wanderers-core/LICENSE`
-(the `config/` folder and `vendor.mjs` aren't needed in Foundry). Keep `LICENSE`.
+The zip leaves out `vendor/wanderers-core/config/` (shared ESLint, tsconfig and Foundry global declarations: dev tools only) and
+`vendor/wanderers-core/vendor.mjs` (the vendor tool: run from a checkout, never imported by the runtime). Nothing core's runtime
+imports lives in either, and `LICENSE` stays in the zip. Only the zip is slimmed: the vendored folder in the repo stays complete,
+because `verify` hashes every file in it.

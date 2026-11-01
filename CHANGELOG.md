@@ -18,7 +18,7 @@ First version, drawn from the copies in Wayfarer's Toolkit, Red Book and Wandere
 - Foundry halves bound to the host module id: `createLeader` (election, request routing with schema checks and sender-id rights,
   hook broadcast), `createFeatures`, `createSettings`, `createLogger`, cleanup helpers (`flaggedDocuments`, `unsetFlags`,
   `resetSettings`).
-- `tools/vendor.mjs`: install, update, verify (content hash), verify against the published release, bundle.
+- `tools/vendor.mjs`: install, update, verify (content hash), verify against the published release, bundle. Module release zips ship the vendored runtime only (no `config/`, no `vendor.mjs`).
 - Shared ESLint flat config, tsconfig base and Foundry global declarations in `config/`.
 - CI: tests, release (tag check, bundle upload, download check), reusable `module-checks.yml`, Dependabot.
 - CONVENTIONS.md, STABILITY.md, docs/module-ci.md, docs/branch-protection.md.

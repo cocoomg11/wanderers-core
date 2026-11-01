@@ -82,7 +82,10 @@ inside its own zip, so every module stays standalone. CI in each module fails wh
        uses: cocoomg11/wanderers-core/.github/workflows/module-checks.yml@v0.1.0
    ```
 
-5. **Release zip**: add `vendor` to the module's zip step.
+5. **Release zip**: add `vendor` to the module's zip step, but leave out `vendor/wanderers-core/config/` (shared lint and type configs) and
+   `vendor/wanderers-core/vendor.mjs` (the vendor tool): only dev tools and CI use them, and Foundry never loads them
+   (`zip -r module.zip ... vendor ... -x 'vendor/wanderers-core/config/*' 'vendor/wanderers-core/vendor.mjs'`). Keep the vendored folder in the
+   repo complete: the pin check hashes every file.
 
 ## Public API
 
