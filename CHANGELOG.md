@@ -3,6 +3,43 @@
 All notable changes to wanderers-core. Versions follow [STABILITY.md](STABILITY.md). Modules pick up a release only when they update
 their pin.
 
+## 0.4.0 (2026-11-01)
+
+Two opt-in window helpers; everything stays experimental. Nothing changes for a module until it uses them: move with
+`node vendor/wanderers-core/vendor.mjs update 0.4.0` (and `module-checks.yml@v0.4.0`). The stylesheet is unchanged (`UI_REVISION` 2).
+Guide: [docs/windows.md](docs/windows.md).
+
+### Added
+
+- **Remembered window placement** (`foundry/index.mjs`): `RememberedWindow(Base, { moduleId, key, size, minimized, saveMs })`, a
+  mixin for ApplicationV2 classes. Restores left/top/width/height and the minimized state, clamped to the page; re-clamps (without
+  saving) on page resize and core client setting changes (UI scale); debounced saves from `_onPosition` and minimize/maximize; a
+  pending save is written on close. A window opened with its own `position.left`/`top` keeps it. Also `registerWindowPlacement(moduleId)`,
+  `resetPlacement(moduleId, key?)`, `savedPlacement(moduleId, key)`.
+- Storage: one hidden client setting per module, `<moduleId>.windowPlacement`, value `{ v: 1, windows: { <key>: { left, top, width?,
+  height?, minimized? } } }`, capped at 50 windows (least recently saved dropped). New versioned format, `v` 1.
+- Pure helpers (`index.mjs`, `window-model.mjs`): `readPlacement`, `readPlacements` (never throws), `getPlacement`, `setPlacement`,
+  `removePlacement`, `samePlacement`, `clampPlacement`, `placementOf`, `debouncer`, `isWindowKey`, constants `PLACEMENT_SETTING`
+  `PLACEMENT_VERSION` `PLACEMENT_MAX` `PLACEMENT_SAVE_MS` `PLACEMENT_MIN_SIZE` `WINDOW_KEY_RE`.
+- **Open keybindings**: `registerOpenKeybinding({ moduleId, action, name, hint, onDown, gmOnly, editable, precedence })` (Foundry
+  half) over `game.keybindings.register`; no key by default; `gmOnly` → `restricted` and a GM check in `onDown`; errors in `onDown`
+  are logged, never thrown. Pure `defineOpenKeybinding` (throws on bad definitions), `keybindingConfig`, `KEY_MODIFIERS`, `ACTION_RE`,
+  `KEY_CODE_RE`.
+- Tests: `tests/window.test.mjs` (models, plus the mixin and keybinding wiring against a fake ApplicationV2 and `game`).
+
+### Untested in Foundry
+
+- [ ] A window using `RememberedWindow`: drag and resize it, close and reopen: same place and size. Reload the world: still there.
+- [ ] Move it near the right edge, shrink the browser window: it moves back inside the page; enlarge again and reopen: original place.
+- [ ] Change the UI scale (Configure Settings › Core): an open window is re-clamped; reopened windows fit the page.
+- [ ] Minimize, close, reopen: opens minimized; maximize: full size from before minimizing (not the header's height).
+- [ ] A window opened with `new App({ position: { left, top } })` opens there, not at the saved placement.
+- [ ] `_onPosition` fires for header drags and the resize handle in v13 and v14 (saves happen while dragging stops).
+- [ ] The setting is per user/browser (`scope: "client"`), not shown in Configure Settings; `resetPlacement(ID)` clears it.
+- [ ] A HandlebarsApplicationMixin window and a DocumentSheetV2 subclass with a key function both work.
+- [ ] `registerOpenKeybinding` in `init`: the action shows under the module in Configure Controls with no key; assigning a key opens
+  the window; a `gmOnly` action is hidden from and refused for players; an error in `onDown` only logs.
+
 ## 0.3.1 (2026-11-01)
 
 Shared stylesheet revision 2 (`wc-r2`). Modules pick it up with `node vendor/wanderers-core/vendor.mjs update 0.3.1`; windows built

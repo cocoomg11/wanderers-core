@@ -11,19 +11,22 @@ installed in Foundry). Public repo, MIT. Read CONVENTIONS.md (house practices) a
   `settings-model.mjs`, `leader-model.mjs` (election rules, `seenCache`, request ids), `socket-model.mjs` (`defineRequests`,
   `readRequest`, `makeRequest`), `health-model.mjs` (`healthCollector`), `cleanup-model.mjs`, `settings-io-model.mjs`,
   `notes-model.mjs`, `rate-model.mjs` (`rateLimiter`), `scene-tab-model.mjs` (shared scene tab registry and ordering), `ui-model.mjs`
-  (`UI_REVISION`, `UI_CLASSES`, `badge`/`icon`/`dot`/`statusLine`/`navItem` markup helpers).
+  (`UI_REVISION`, `UI_CLASSES`, `badge`/`icon`/`dot`/`statusLine`/`navItem` markup helpers), `window-model.mjs` (placement store,
+  `readPlacements`, `clampPlacement`, `debouncer`), `keybinding-model.mjs` (`defineOpenKeybinding`, `keybindingConfig`).
 - `styles/wanderers-ui.css` the opt-in shared look (ships as `vendor/wanderers-core/styles/`; docs/ui.md). Scoped under
   `.wc-ui.wc-r<UI_REVISION>`; any edit bumps `UI_REVISION` and the hash in `tests/ui.test.mjs`; only Foundry variables (checked live
   on 14.369), hex only as var() fallbacks.
 - Foundry halves (thin, untested in Node): `foundry/leader.mjs` (`createLeader`), `foundry/module.mjs` (`createFeatures`,
   `createSettings`, `createLogger`, setting readers), `foundry/cleanup.mjs` (flag walk, unset, reset), `foundry/scene-tab.mjs`
-  (`sceneTab`, the shared "Table Tools" tab via the `renderSceneConfig` hook).
+  (`sceneTab`, the shared "Table Tools" tab via the `renderSceneConfig` hook), `foundry/window.mjs` (`RememberedWindow` mixin over
+  documented ApplicationV2 methods `_initializeApplicationOptions`/`_onFirstRender`/`_onPosition`/`minimize`/`maximize`/`_onClose`;
+  state set during the constructor lives in a WeakMap, not private fields), `foundry/keybinding.mjs` (`registerOpenKeybinding`).
 - `tools/vendor.mjs` install/update/verify/bundle (Node only, no packages; also shipped as `vendor/wanderers-core/vendor.mjs`).
 - `config/` shared `eslint.base.mjs`, `tsconfig.base.json`, `foundry-globals.d.ts` (shipped to modules).
 - `tests/*.test.mjs`; `foundry-fake.test.mjs` runs the Foundry halves against a fake `game` (wiring only, not Foundry).
 - `.github/workflows/`: `test.yml`, `release.yml`, `module-checks.yml` (reusable, called by modules). `.github/dependabot.yml`.
 - Docs: README (Public API, quick start), CONVENTIONS.md, STABILITY.md, CHANGELOG.md, `docs/module-ci.md`, `docs/branch-protection.md`,
-  `docs/ui.md` (shared look: classes, tokens, markup, adoption).
+  `docs/ui.md` (shared look: classes, tokens, markup, adoption), `docs/windows.md` (remembered placement, open keybindings).
 
 ## Key patterns
 - **Namespacing is a hard rule**: no globals (one exception: the scene tab registry `globalThis.__wanderersSceneTab`, versioned), no localStorage, no shared settings/flags/socket channels/hooks. Every Foundry-facing
@@ -37,14 +40,17 @@ installed in Foundry). Public repo, MIT. Read CONVENTIONS.md (house practices) a
 - **Keep core small.** Add only what at least two modules repeat and what has a stable shape. UI, wording and module rules stay in
   the modules (see README, What is deliberately not in core).
 - Every new export gets JSDoc types (checked by `tsc`), a test, a README Public API row (experimental first) and a CHANGELOG line.
-- Changing a format (settings file, socket envelopes, bundle, lock) needs a version bump in that format and a reader for the old one.
+- Window placement lives in one hidden client setting per module, `<moduleId>.windowPlacement` (`PLACEMENT_SETTING`, `v` 1);
+  keybindings register with no key unless the module passes `editable`.
+- Changing a format (settings file, socket envelopes, bundle, lock, window placement) needs a version bump in that format and a reader for the old one.
 
 ## Tests and checks
 - `npm ci` once (dev tools pinned in package-lock.json), then `npm run check`, `npm run lint`, `npm run types`, `npm test`
   (`npm run ci` runs all four). CI runs them on every push.
 - Tests are not type-checked (they feed wrong types on purpose) but are linted.
-- Not testable in Node: real sockets, settings registration, hooks, document flag writes. List them in the CHANGELOG's
-  *Untested in Foundry* checklist.
+- Not testable in Node: real sockets, settings registration, hooks, document flag writes, window drag/resize, key presses. List
+  them in the CHANGELOG's *Untested in Foundry* checklist. `tests/window.test.mjs` checks the mixin against a fake ApplicationV2 only.
+- Locally without `npm ci`: `tsc -p tsconfig.json --typeRoots <a folder holding @types/node>`.
 
 ## Release process
 1. Bump `version` in `package.json` **and** `CORE_VERSION` in `src/version.mjs` (a test checks they match).

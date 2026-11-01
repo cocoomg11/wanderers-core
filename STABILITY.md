@@ -11,7 +11,8 @@ says what a version number promises to the person updating a pin.
 - The file formats: the settings file (`module`, `format`, `version`, `exported`, `world`, `client`), the socket envelopes
   (`{ action: "request", kind, rid, data }`, `{ action: "leader", op, sid, since }` and `{ action: "leader", op: "hello" }`,
   `{ action: "hook", name, sid, payload }`), the release bundle (`format`), the lock file (`lockVersion`) and the shared scene tab
-  registry (`globalThis.__wanderersSceneTab`, `version`; its tab id `wanderers`).
+  registry (`globalThis.__wanderersSceneTab`, `version`; its tab id `wanderers`) and the window placement setting
+  (`<moduleId>.windowPlacement`, `v`).
 - The shared stylesheet's contract: its path (`styles/wanderers-ui.css`), the root classes (`UI_CLASSES`), and the class and token
   names listed in docs/ui.md for the current `UI_REVISION`.
 - The vendor tool's commands and options, and `config/` (ESLint config function, tsconfig base).
@@ -24,7 +25,8 @@ Each export is marked **stable** or **experimental** in the README *Public API* 
 - **Experimental**: may change in a minor release; the changelog says how. New exports start experimental.
 
 While core is `0.x`, everything is experimental unless the README marks it stable, and a minor release (0.1 → 0.2) may break.
-As of 0.3.0 nothing is marked stable: every export, including the scene tab, rate limit and the shared UI look, is experimental.
+As of 0.4.0 nothing is marked stable: every export, including the scene tab, rate limit, the shared UI look, window placement and
+keybindings, is experimental.
 From 1.0.0 the rules below are strict.
 
 ## What counts as breaking (needs a major version)

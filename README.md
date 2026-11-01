@@ -5,7 +5,8 @@ pinned copy, so core is a library, not something you install. It has two parts:
 
 - **Shared code** every module repeats: a feature registry, a settings table, a one-writer election with schema-checked socket
   requests, read-only health checks, cleanup plans, debug logging, settings files, update notes, version compare, capped record
-  lists, schema-version normalizers, request rate limits and one shared Scene Configuration tab.
+  lists, schema-version normalizers, request rate limits, one shared Scene Configuration tab, remembered window placement and
+  keybindings that open a module's windows.
 - **An opt-in shared UI look**: a stylesheet that matches Foundry's own theme (light and dark) plus small markup helpers, so every
   module's windows look alike. Nothing changes in a module until it adds the stylesheet ([docs/ui.md](docs/ui.md)).
 
@@ -16,19 +17,21 @@ inside its own zip, so every module stays standalone. CI in each module fails wh
 - [Public API](#public-api)
 - [Shared Scene Configuration tab](#shared-scene-configuration-tab)
 - [Shared UI look](#shared-ui-look)
+- [Windows: placement and keybindings](#windows-placement-and-keybindings)
 - [Vendor tool](#vendor-tool)
 - [Namespacing](#namespacing)
 - [What is deliberately not in core](#what-is-deliberately-not-in-core)
 - [Development](#development)
 - Policies: [CONVENTIONS.md](CONVENTIONS.md) (house practices), [STABILITY.md](STABILITY.md) (semver, deprecation),
-  [docs/module-ci.md](docs/module-ci.md), [docs/branch-protection.md](docs/branch-protection.md), [docs/ui.md](docs/ui.md)
+  [docs/module-ci.md](docs/module-ci.md), [docs/branch-protection.md](docs/branch-protection.md), [docs/ui.md](docs/ui.md),
+  [docs/windows.md](docs/windows.md)
 
 ## Using core in a module
 
 1. **Vendor a release** (from the module's root folder; needs Node 22):
 
    ```sh
-   node path/to/wanderers-core/tools/vendor.mjs install 0.3.0   # a core checkout's copy of the tool
+   node path/to/wanderers-core/tools/vendor.mjs install 0.4.0   # a core checkout's copy of the tool
    ```
 
    This writes `vendor/wanderers-core/` and `wanderers-core.lock.json` (version, content hash, source). Commit both. From then on the
@@ -85,7 +88,7 @@ inside its own zip, so every module stays standalone. CI in each module fails wh
    ```yaml
    jobs:
      checks:
-       uses: cocoomg11/wanderers-core/.github/workflows/module-checks.yml@v0.3.0
+       uses: cocoomg11/wanderers-core/.github/workflows/module-checks.yml@v0.4.0
    ```
 
 5. **Release zip**: add `vendor` to the module's zip step, but leave out `vendor/wanderers-core/config/` (shared lint and type configs) and
@@ -95,6 +98,10 @@ inside its own zip, so every module stays standalone. CI in each module fails wh
 
 6. **Shared look** (optional): list `vendor/wanderers-core/styles/wanderers-ui.css` in `module.json` `styles` and add `UI_CLASSES`
    to a window's `classes`. See [Shared UI look](#shared-ui-look).
+
+7. **Windows** (optional): `RememberedWindow(Base, { moduleId, key })` makes a window open where the user left it;
+   `registerOpenKeybinding({ moduleId, action, name, onDown })` in `init` lists "Open …" in Configure Controls (no key by default).
+   See [Windows](#windows-placement-and-keybindings).
 
 ## Public API
 
@@ -118,6 +125,8 @@ everything is experimental** (may change in a minor release, with a changelog no
 | Settings file | `SETTINGS_FORMAT`, `buildExport(id, values, opts)`, `readImport(id, input, defs, current, { skip, requireModule, label, validators })`, `checkValue`, `preview`, `fileName` | experimental |
 | Update notes | `decide({ stored, current, knownWorld })`, `entriesBetween`, `buildNotice({ notes, always, from, to, on, ctx })`, `lintNotes` | experimental |
 | UI look | `UI_REVISION`, `UI_CLASSES`, `UI_STYLESHEET`, `TONES`, `tone`, `icon`, `badge`, `dot`, `statusLine`, `statusLines`, `navItem`; stylesheet `styles/wanderers-ui.css` (classes and tokens in [docs/ui.md](docs/ui.md)) | experimental |
+| Window placement (pure) | `readPlacement`, `readPlacements`, `getPlacement`, `setPlacement`, `removePlacement`, `samePlacement`, `clampPlacement(placement, viewport, { scale, minWidth, minHeight, size })`, `placementOf`, `debouncer(fn, ms)`, `isWindowKey`, constants `PLACEMENT_SETTING` `PLACEMENT_VERSION` `PLACEMENT_MAX` `PLACEMENT_SAVE_MS` `PLACEMENT_MIN_SIZE` `WINDOW_KEY_RE` | experimental |
+| Keybindings (pure) | `defineOpenKeybinding(spec)`, `keybindingConfig(def, { isGM, onError })`, `KEY_MODIFIERS`, `ACTION_RE`, `KEY_CODE_RE` | experimental |
 | Scene tab (pure) | `defineSection`, `orderSections`, `upsertSection`, `ownField`, `createRegistry`, `usableRegistry`, `claimRegistry`, constants `SCENE_TAB_GLOBAL` `SCENE_TAB_VERSION` `SCENE_TAB_ID` `SCENE_TAB_LABEL` `SCENE_TAB_ICON` | experimental |
 
 | Area | Exports (Foundry, `foundry/index.mjs`) | Status |
@@ -125,10 +134,12 @@ everything is experimental** (may change in a minor release, with a changelog no
 | One writer | `createLeader({ id, requests, hooks, leaderHook, log, rateLimit })` → `start`, `stop`, `settled`, `isLeader`, `onLeader`, `onBye`, `handle`, `request`, `broadcastHook`, `activeGM`, `info` | experimental |
 | Module | `createFeatures(id, list, { title })` → `FEATURES`, `on`, `allOn`, `need`, `register`, `list`; `createSettings(id, rows, opts)` → `ROWS`, `register`, `get`, `set`; `createLogger(id)` → `log`, `warn`, `debugOn`; `getSetting`, `settingValues`, `settingDefs` | experimental |
 | Cleanup | `worldDocuments()`, `flaggedDocuments(ns, filter)`, `unsetFlags(ns, uuids)`, `resetSettings(ns, keys)` | experimental |
+| Windows | `RememberedWindow(Base, { moduleId, key, size, minimized, saveMs })` → subclass with `placementKey`, `clampToViewport`, `resetPlacement`; `registerWindowPlacement(moduleId)`, `resetPlacement(moduleId, key?)`, `savedPlacement(moduleId, key)` | experimental |
+| Keybindings | `registerOpenKeybinding({ moduleId, action, name, hint, onDown, gmOnly, editable, precedence })` | experimental |
 | Scene tab | `sceneTab.addSection(id, { title, order, render, onSubmit })`, `sceneTab.removeSection(id)`, `sceneTab.sections()` | experimental |
 
 Formats (versioned, see STABILITY.md): settings file `format` 1; socket envelopes `request` / `leader` / `hook`; release bundle
-`format` 1; lock file `lockVersion` 1; scene tab registry `version` 1; shared stylesheet revision `UI_REVISION` 2 (`wc-r2`).
+`format` 1; lock file `lockVersion` 1; scene tab registry `version` 1; window placement setting `v` 1; shared stylesheet revision `UI_REVISION` 2 (`wc-r2`).
 
 Core fires **no hooks of its own**. `createLeader` fires only the hook names the module passes (`leaderHook`, `hooks`), all in the
 module's namespace.
@@ -232,6 +243,23 @@ static DEFAULT_OPTIONS = { classes: ["my-window", ...UI_CLASSES] };   // "wc-ui 
 `html` or bare element rules, and keyframe and container names carry the revision. A module on an older core keeps its windows'
 revision class, so another module's newer stylesheet never restyles them. Any change to the file bumps `UI_REVISION` (a test
 compares the file with a hash per revision). Class list, tokens, markup and adoption steps: [docs/ui.md](docs/ui.md).
+
+## Windows: placement and keybindings
+
+Opt-in per window ([docs/windows.md](docs/windows.md)):
+
+```js
+export class Hub extends RememberedWindow(HandlebarsApplicationMixin(ApplicationV2), { moduleId: ID, key: "hub" }) { /* … */ }
+Hooks.once("init", () => {
+  registerOpenKeybinding({ moduleId: ID, action: "openHub", name: "Open the control panel", gmOnly: true, onDown: () => { new Hub().render({ force: true }); } });
+});
+```
+
+- Placements live in one hidden client setting per module, `<moduleId>.windowPlacement` (`{ v: 1, windows: { <key>: { left, top,
+  width, height, minimized } } }`), so each user keeps their own and modules never share it. Restored clamped to the page, re-clamped
+  (without saving) when the page or UI scale shrinks, saved debounced after moves and resizes. A window opened with its own
+  `position.left`/`top` keeps that position. `resetPlacement(ID, key?)` forgets one or all.
+- Keybindings register with **no key** unless the module passes `editable`; `gmOnly` maps to Foundry's `restricted`. Call in `init`.
 
 ## Vendor tool
 
