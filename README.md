@@ -125,7 +125,7 @@ everything is experimental** (may change in a minor release, with a changelog no
 | Scene tab | `sceneTab.addSection(id, { title, order, render, onSubmit })`, `sceneTab.removeSection(id)`, `sceneTab.sections()` | experimental |
 
 Formats (versioned, see STABILITY.md): settings file `format` 1; socket envelopes `request` / `leader` / `hook`; release bundle
-`format` 1; lock file `lockVersion` 1; scene tab registry `version` 1; shared stylesheet revision `UI_REVISION` 1 (`wc-r1`).
+`format` 1; lock file `lockVersion` 1; scene tab registry `version` 1; shared stylesheet revision `UI_REVISION` 2 (`wc-r2`).
 
 Core fires **no hooks of its own**. `createLeader` fires only the hook names the module passes (`leaderHook`, `hooks`), all in the
 module's namespace.
@@ -222,7 +222,7 @@ The helpers in `index.mjs` (`badge`, `icon`, `dot`, `statusLine`, `statusLines`,
 
 ```js
 import { UI_CLASSES, badge } from "../vendor/wanderers-core/index.mjs";
-static DEFAULT_OPTIONS = { classes: ["my-window", ...UI_CLASSES] };   // "wc-ui wc-r1"
+static DEFAULT_OPTIONS = { classes: ["my-window", ...UI_CLASSES] };   // "wc-ui wc-r2"
 ```
 
 **Opt-in and version-safe**: every rule is scoped under `.wc-ui.wc-r<revision>`, tokens live on that root, there are no `:root`,

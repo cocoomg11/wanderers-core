@@ -49,7 +49,7 @@ that keep that safe (tests in `tests/ui.test.mjs` check each):
 - **The revision class** `wc-r<N>` (`UI_REVISION`) changes whenever the stylesheet changes (a test compares the file to a recorded
   hash per revision). A window built against revision 1 carries `wc-r1` and is styled only by a copy that defines revision 1; a newer
   copy's `wc-r2` rules don't touch it. Two copies of the same revision are byte-identical, so loading both is harmless.
-- **Keyframes and container queries are named per revision** (`wc-r1-pulse`, `@container wc-r1`), so copies can't redefine each
+- **Keyframes and container queries are named per revision** (`wc-r2-pulse`, `@container wc-r2`), so copies can't redefine each
   other's.
 - Class names are additive: a new revision may add classes; within one revision nothing changes.
 
@@ -77,7 +77,7 @@ red is lightened in the dark theme (body theme or `.theme-dark` / `.theme-light`
 
 ## Classes
 
-**Root:** `wc-ui` + `wc-r1` (use `UI_CLASSES`). `wc-flush` on the root removes the window content's padding.
+**Root:** `wc-ui` + `wc-r2` (use `UI_CLASSES`). `wc-flush` on the root removes the window content's padding.
 
 **Tones** (on any component, or alone to colour text): `wc-ok`, `wc-warn`, `wc-bad`, `wc-info`, `wc-off`, `wc-pending`, `wc-live`,
 `wc-accent`, `wc-none`.
@@ -98,10 +98,10 @@ red is lightened in the dark theme (body theme or `.theme-dark` / `.theme-light`
 | Chips | `wc-chip` (tag or filter; `.active` / `aria-pressed="true"`), `wc-val` (value chip), `wc-val-new` |
 | Timeline | `ul.wc-timeline` › `li` (`wc-tl-note`, `wc-tl-new`) › `wc-tl-time`, `wc-tl-icon` + tone, `wc-tl-text`, `wc-tl-aside` |
 | Table | `wc-table-box` › `table.wc-table` |
-| Shell | `wc-shell` › `nav.wc-side` (`wc-side-head` group labels, `wc-nav` links with `.active` or `aria-current="page"`, `wc-nav-label`, `wc-muted`, `wc-side-foot`), `wc-main` |
+| Shell | `wc-shell` › `nav.wc-side` (`wc-side-head` group labels, `wc-nav` links with `.active` or `aria-current="page"`, `wc-nav-label`, `wc-muted`, `wc-side-foot`), `wc-main` (the page scrolls as a whole; its direct children keep their height, from revision 2) |
 | Page head | `wc-pagehead` › `wc-pagehead-title` (h1/h2), `wc-pagehead-meta`; buttons after the title |
 | Focus | `wc-btn`, `wc-chip`, `wc-nav` show a 2 px accent outline on `:focus-visible` |
-| Narrow | at 720 px wide or less (`@container wc-r1`): the sidebar becomes a wrapping strip, `wc-cols` one column, timeline rows fold |
+| Narrow | at 720 px wide or less (`@container wc-r2`): the sidebar becomes a wrapping strip, `wc-cols` one column, timeline rows fold |
 
 ## Markup examples
 
@@ -155,7 +155,7 @@ From `vendor/wanderers-core/index.mjs`, pure and tested in Node. Every value is 
 
 | Helper | Returns |
 |---|---|
-| `UI_REVISION`, `UI_CLASSES`, `UI_STYLESHEET` | `1`, `["wc-ui", "wc-r1"]`, `"styles/wanderers-ui.css"` |
+| `UI_REVISION`, `UI_CLASSES`, `UI_STYLESHEET` | `2`, `["wc-ui", "wc-r2"]`, `"styles/wanderers-ui.css"` |
 | `TONES` | frozen `{ ok, warn, bad, info, off, pending, live, accent, none }` → `{ icon, word }` (Font Awesome classes, screen-reader word) |
 | `tone(t)` | a tone name; health levels and aliases through `level` ("error" → "bad"); unknown → "info" |
 | `icon(t, { word })` | `<i class="… wc-icon wc-<t>" aria-hidden="true"></i><span class="wc-sr">Word:</span>`; `word: false` drops the word |

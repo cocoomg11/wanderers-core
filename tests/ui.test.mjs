@@ -15,7 +15,8 @@ const ROOT = `.wc-ui.wc-r${UI_REVISION}`;
  * then add the new hash here. A shipped revision's hash never changes.
  */
 const REVISION_HASHES = {
-  1: "16f473dfccab45973abae9ee5b9243911aa9eb28a4f92dc899f96200303b4efd"
+  1: "16f473dfccab45973abae9ee5b9243911aa9eb28a4f92dc899f96200303b4efd",
+  2: "d03ac54c763bdce8e9e5b2c4203751747cd6e22f603a47b06e7386cfaf9223b2"
 };
 
 /** Selectors of every style rule (comments and at-rule preludes removed). */
@@ -67,6 +68,10 @@ test("no hard-coded colours outside var() fallbacks", () => {
 test("a changed stylesheet needs a new revision", () => {
   const hash = createHash("sha256").update(css.replace(/\r\n?/g, "\n"), "utf8").digest("hex");
   assert.equal(REVISION_HASHES[UI_REVISION], hash, `styles changed: bump UI_REVISION (now ${UI_REVISION}) and record the new hash`);
+});
+
+test("the sidebar shell's page keeps its children's height (no shrinking table boxes)", () => {
+  assert.match(css, new RegExp(`${ROOT.replace(/\./g, "\\.")} \\.wc-main > \\* \\{ flex-shrink: 0; \\}`));
 });
 
 test("the stylesheet ships in the vendored bundle at vendor/wanderers-core/styles/", () => {

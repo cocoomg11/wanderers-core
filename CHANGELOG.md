@@ -3,6 +3,27 @@
 All notable changes to wanderers-core. Versions follow [STABILITY.md](STABILITY.md). Modules pick up a release only when they update
 their pin.
 
+## 0.3.1 (2026-11-01)
+
+Shared stylesheet revision 2 (`wc-r2`). Modules pick it up with `node vendor/wanderers-core/vendor.mjs update 0.3.1`; windows built
+with `UI_CLASSES` move to `wc-r2` automatically. Windows still carrying `wc-r1` (another module on 0.3.0) keep revision 1's look.
+
+### Fixed
+
+- **Sidebar shell, short or narrow windows**: `.wc-main` is a scrolling column flexbox, so its children could shrink below their
+  content height; a `wc-table-box` or `wc-panel` (both `overflow` set, so their automatic minimum height is 0) shrank to a few pixels
+  instead of the page scrolling (seen at 640×720 and 1000×450 in a module's hub). From revision 2, `.wc-main`'s direct children
+  have `flex-shrink: 0`. A module on 0.3.0 can add the same rule for its own window until it moves to 0.3.1.
+
+### Changed
+
+- `UI_REVISION` 2, `UI_CLASSES` `["wc-ui", "wc-r2"]`; revision 2's hash recorded in `tests/ui.test.mjs` (revision 1's kept).
+
+### Untested in Foundry
+
+- [ ] A sidebar-shell window at 640×720 and 1000×450: tables and panels keep their full height and the page scrolls.
+- [ ] A `wc-r1` window (module on 0.3.0) and a `wc-r2` window (module on 0.3.1) open together: each keeps its own look.
+
 ## 0.3.0 (2026-11-01)
 
 Everything stays experimental. Nothing changes for a module until it opts in: modules move with
