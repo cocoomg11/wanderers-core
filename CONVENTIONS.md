@@ -30,6 +30,8 @@ disagree, the module's file wins for that module, and this file should be update
 - **Setting keys are stable**: never rename one (a rename silently resets every world's choice). Settings live only under the
   module's own namespace.
 - Settings appear on the module's control panel (Basic first, the rest under Advanced), not as loose submenus.
+- Per-scene options go in a section of the **shared Scene Configuration tab** (`sceneTab.addSection`), never in a tab of the module's
+  own: one "Table Tools" tab for every module. Fields are named `flags.<module-id>.…`.
 - Strings are plain English in code (`lang/en.json` stays empty unless a module adopts translation deliberately).
 - **No automatic hotbar macros.**
 

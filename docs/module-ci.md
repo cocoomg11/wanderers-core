@@ -20,14 +20,14 @@ permissions:
 
 jobs:
   checks:
-    uses: cocoomg11/wanderers-core/.github/workflows/module-checks.yml@v0.1.0
+    uses: cocoomg11/wanderers-core/.github/workflows/module-checks.yml@v0.2.0
     # with:
     #   lint: false      # while the module still has lint errors to fix
     #   types: false     # while the module isn't JSDoc-clean yet
     #   remote: false    # skip checking the lock against the published release
 ```
 
-Pin the reusable workflow to a core release tag (`@v0.1.0`), not `@main`, so a core change can't alter a module's CI without a
+Pin the reusable workflow to a core release tag (`@v0.2.0`), not `@main`, so a core change can't alter a module's CI without a
 commit in the module. Dependabot (`github-actions` ecosystem) proposes the bump.
 
 The check name for branch protection is `checks / Core pin, lint, types and tests`.
@@ -41,7 +41,9 @@ The check name for branch protection is `checks / Core pin, lint, types and test
    missing file fails, and the log names the files.
 4. `verify --remote`: also downloads the release asset `wanderers-core-<version>.json` and checks the lock's hash is that release's
    hash, so a lock can't point at a version it doesn't contain.
-5. A `local` pin (from `install --from <checkout>`, for trying unreleased core) passes with a warning. Pin a release before
+5. The lock's `source` must be `release` or `local` and its `version` `X.Y.Z`; anything else fails before any step uses them. Lock
+   values reach later steps only through environment variables, never pasted into a script.
+6. A `local` pin (from `install --from <checkout>`, for trying unreleased core) passes with a warning. Pin a release before
    releasing the module.
 
 ## Without the reusable workflow

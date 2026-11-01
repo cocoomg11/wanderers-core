@@ -3,6 +3,63 @@
 All notable changes to wanderers-core. Versions follow [STABILITY.md](STABILITY.md). Modules pick up a release only when they update
 their pin.
 
+## 0.2.0 (2026-11-01)
+
+Everything stays experimental. Modules move to it with `node vendor/wanderers-core/vendor.mjs update 0.2.0` and their reusable
+workflow reference `module-checks.yml@v0.2.0`.
+
+### Added
+
+- **Shared Scene Configuration tab** (`sceneTab` in `foundry/index.mjs`): one "Table Tools" tab (id `wanderers`) for every module that
+  vendors core, each module adding its own titled section with `sceneTab.addSection(id, { title, order, render, onSubmit })`. The
+  first copy of core to add a section creates a versioned registry on `globalThis.__wanderersSceneTab` and the `renderSceneConfig`
+  hook; other copies only add their section. Fields named `flags.<id>.…` save with the window's own submit; other names are
+  disabled. Pure half `scene-tab-model.mjs` (`defineSection`, `orderSections`, `upsertSection`, `ownField`, `createRegistry`,
+  `usableRegistry`, `claimRegistry`, constants) tested in Node.
+- `rateLimiter({ burst, perSecond, maxKeys })` (token bucket), `RATE_BURST`, `RATE_PER_SECOND`.
+- `parseRequestId`, `readHookMessage`, `acceptHook`, `PASSIVE_MAX_AGE_MS`.
+- `readImport(..., { validators })`: optional per-key checks for Object and Array settings.
+- `createLeader({ rateLimit })`: per-user request limit, on by default (20 at once, 5 a second); `false` turns it off.
+
+### Changed
+
+- The hook envelope is now `{ action: "hook", name, sid, payload }` (the sending session's id). A 0.1.0 copy's hooks (no `sid`) are
+  not accepted by 0.2.0 clients; modules on the same core version are unaffected.
+- `broadcastHook` returns whether it sent the hook to other clients, and sends only from the leader (elsewhere it fires locally).
+- New session op `{ action: "leader", op: "hello" }`: a player client asks who leads when it loads; the leader answers `here`.
+- Request ids must be in `makeRequestId`'s shape (`<prefix>-<n>-<time>`); ids that only matched `ID_RE` are refused.
+- Dev tool versions in the README match package.json (eslint 10.13.0, typescript 7.0.2).
+
+### Security
+
+- **Hook relay**: a broadcast hook from another client fires only when Foundry's sender is a known GM user and the hook comes from
+  the session this client counts as the leader. Before, any client (a player included) could fire any of the module's registered
+  broadcast hooks on every client.
+- **Sender identity**: unknown senders are refused before anything else is read; there is no fallback to a `userId` in the payload
+  anywhere in core (now a rule in CONVENTIONS.md for modules too).
+- **Requests**: per-user rate limit; unparseable request ids refused.
+- **CI**: `module-checks.yml` passes the lock file's values through `env` (never into a script) and checks `source` against
+  `^(release|local)$` and `version` against `X.Y.Z`. Every action is pinned by commit SHA. The Release workflow builds in a read-only
+  job with `npm ci` and the committed lockfile, and uploads in a separate `contents: write` job.
+
+### Untested in Foundry
+
+Run in a live v14 world (and v13 where noted) once a module has adopted 0.2.0:
+
+- [ ] Scene tab: Scene Configuration shows one "Table Tools" tab with the toolbox icon after the built-in tabs, with two or three
+      modules installed and with only one; sections appear in order, each with its own title.
+- [ ] Scene tab: clicking it switches tabs like the built-in ones (Foundry's `data-action="tab"` handling); it stays active and keeps
+      one copy after a re-render (change a field, change the grid, re-open the window); no duplicate nav entry or panel.
+- [ ] Scene tab: a `flags.<id>.…` field saves on Update Scene and shows the saved value when the window re-opens; a field with
+      another name is disabled; `onSubmit` runs once per submit.
+- [ ] Scene tab: works in v13's SceneConfig too (nav `data-group`, panel placement), or note that it doesn't.
+- [ ] Two modules on different core versions (0.2.0 and a later one) share the one tab.
+- [ ] Socket sender id: a request or hook sent by a player with a forged `userId` or a copied leader `sid` is refused; a request from
+      a user unknown to the leader is refused; Foundry passes the real sender id as the listener's second argument.
+- [ ] Broadcast hooks: fired by the leader reach the other GM tabs and players; one fired from a non-leader GM tab stays local; a
+      player who joins after the GM learns the leader (the `hello` answer) and accepts the next hook.
+- [ ] Rate limit: a player sending more than 20 requests at once sees the extra ones refused (debug log), normal play never hits it.
+
 ## 0.1.0 (2026-11-01)
 
 First version, drawn from the copies in Wayfarer's Toolkit, Red Book and Wanderer's Satchel. Everything is experimental.
