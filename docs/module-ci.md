@@ -20,14 +20,14 @@ permissions:
 
 jobs:
   checks:
-    uses: cocoomg11/wanderers-core/.github/workflows/module-checks.yml@v0.2.0
+    uses: cocoomg11/wanderers-core/.github/workflows/module-checks.yml@v0.3.0
     # with:
     #   lint: false      # while the module still has lint errors to fix
     #   types: false     # while the module isn't JSDoc-clean yet
     #   remote: false    # skip checking the lock against the published release
 ```
 
-Pin the reusable workflow to a core release tag (`@v0.2.0`), not `@main`, so a core change can't alter a module's CI without a
+Pin the reusable workflow to a core release tag (`@v0.3.0`), not `@main`, so a core change can't alter a module's CI without a
 commit in the module. Dependabot (`github-actions` ecosystem) proposes the bump.
 
 The check name for branch protection is `checks / Core pin, lint, types and tests`.

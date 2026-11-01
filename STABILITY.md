@@ -12,6 +12,8 @@ says what a version number promises to the person updating a pin.
   (`{ action: "request", kind, rid, data }`, `{ action: "leader", op, sid, since }` and `{ action: "leader", op: "hello" }`,
   `{ action: "hook", name, sid, payload }`), the release bundle (`format`), the lock file (`lockVersion`) and the shared scene tab
   registry (`globalThis.__wanderersSceneTab`, `version`; its tab id `wanderers`).
+- The shared stylesheet's contract: its path (`styles/wanderers-ui.css`), the root classes (`UI_CLASSES`), and the class and token
+  names listed in docs/ui.md for the current `UI_REVISION`.
 - The vendor tool's commands and options, and `config/` (ESLint config function, tsconfig base).
 - Not public: anything not exported from those two index files, internal helpers, test files, error message wording (but messages
   stay plain English).
@@ -22,7 +24,7 @@ Each export is marked **stable** or **experimental** in the README *Public API* 
 - **Experimental**: may change in a minor release; the changelog says how. New exports start experimental.
 
 While core is `0.x`, everything is experimental unless the README marks it stable, and a minor release (0.1 → 0.2) may break.
-As of 0.2.0 nothing is marked stable: every export, including the new scene tab and rate limit, is experimental.
+As of 0.3.0 nothing is marked stable: every export, including the scene tab, rate limit and the shared UI look, is experimental.
 From 1.0.0 the rules below are strict.
 
 ## What counts as breaking (needs a major version)
@@ -56,6 +58,20 @@ id. Two modules bundling different core versions therefore run side by side; thi
 The one global is the shared Scene Configuration tab's registry, `globalThis.__wanderersSceneTab`, because one tab shared by every
 module is the feature. Its rules: it carries a `version`; a newer core keeps the version-1 calls (`add`, `remove`, `list`) working
 so an older copy can still add its section; sections are keyed by module id and one module never changes another's.
+
+## Shared stylesheet
+
+The stylesheet is loaded once per module that vendors it, so copies from different core versions meet in one page. Rules (checked by
+`tests/ui.test.mjs`):
+
+- Every selector starts at `.wc-ui.wc-r<N>` (optionally after `body` / `body.theme-dark` / `body.theme-light`); tokens are defined on
+  that root; no `:root`, `html`, `body` or bare element rules; keyframe and container names carry the revision.
+- **Any change to the file bumps `UI_REVISION`** (and every `wc-r<N>` in it), and the new file's hash is recorded for that revision. A
+  shipped revision's file never changes, so two copies of one revision are identical and a window keeps the look it was built for.
+- Breaking (a major version after 1.0, a minor with a changelog note in 0.x): removing or renaming a class, token, `UI_CLASSES` or
+  `UI_STYLESHEET`, or changing a class's markup contract (what it expects inside or around it). Visual tweaks in a new revision and
+  new classes are not breaking.
+- Since modules opt in per window, a new core release never changes a window that doesn't carry its revision class.
 
 ## Changelog
 

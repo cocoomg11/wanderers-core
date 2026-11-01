@@ -3,7 +3,8 @@
 A small shared library for a family of Foundry VTT modules (v13 minimum, verified v14 build 369; any game system). It holds the
 patterns every module repeats: a feature registry, a settings table, a one-writer election with schema-checked socket requests,
 read-only health checks, cleanup plans, debug logging, settings files, update notes, version compare, capped record lists,
-schema-version normalizers, request rate limits and one shared Scene Configuration tab.
+schema-version normalizers, request rate limits, one shared Scene Configuration tab and an opt-in shared UI look (stylesheet +
+markup helpers, [docs/ui.md](docs/ui.md)).
 
 **Core is not a Foundry module.** Nobody installs it. Each module copies a pinned version into `vendor/wanderers-core/` and ships it
 inside its own zip, so every module stays standalone. CI in each module fails when the copy differs from its pin.
@@ -11,19 +12,20 @@ inside its own zip, so every module stays standalone. CI in each module fails wh
 - [Using core in a module](#using-core-in-a-module)
 - [Public API](#public-api)
 - [Shared Scene Configuration tab](#shared-scene-configuration-tab)
+- [Shared UI look](#shared-ui-look)
 - [Vendor tool](#vendor-tool)
 - [Namespacing](#namespacing)
 - [What is deliberately not in core](#what-is-deliberately-not-in-core)
 - [Development](#development)
 - Policies: [CONVENTIONS.md](CONVENTIONS.md) (house practices), [STABILITY.md](STABILITY.md) (semver, deprecation),
-  [docs/module-ci.md](docs/module-ci.md), [docs/branch-protection.md](docs/branch-protection.md)
+  [docs/module-ci.md](docs/module-ci.md), [docs/branch-protection.md](docs/branch-protection.md), [docs/ui.md](docs/ui.md)
 
 ## Using core in a module
 
 1. **Vendor a release** (from the module's root folder; needs Node 22):
 
    ```sh
-   node path/to/wanderers-core/tools/vendor.mjs install 0.2.0   # a core checkout's copy of the tool
+   node path/to/wanderers-core/tools/vendor.mjs install 0.3.0   # a core checkout's copy of the tool
    ```
 
    This writes `vendor/wanderers-core/` and `wanderers-core.lock.json` (version, content hash, source). Commit both. From then on the
@@ -80,13 +82,16 @@ inside its own zip, so every module stays standalone. CI in each module fails wh
    ```yaml
    jobs:
      checks:
-       uses: cocoomg11/wanderers-core/.github/workflows/module-checks.yml@v0.2.0
+       uses: cocoomg11/wanderers-core/.github/workflows/module-checks.yml@v0.3.0
    ```
 
 5. **Release zip**: add `vendor` to the module's zip step, but leave out `vendor/wanderers-core/config/` (shared lint and type configs) and
    `vendor/wanderers-core/vendor.mjs` (the vendor tool): only dev tools and CI use them, and Foundry never loads them
    (`zip -r module.zip ... vendor ... -x 'vendor/wanderers-core/config/*' 'vendor/wanderers-core/vendor.mjs'`). Keep the vendored folder in the
    repo complete: the pin check hashes every file.
+
+6. **Shared look** (optional): list `vendor/wanderers-core/styles/wanderers-ui.css` in `module.json` `styles` and add `UI_CLASSES`
+   to a window's `classes`. See [Shared UI look](#shared-ui-look).
 
 ## Public API
 
@@ -109,6 +114,7 @@ everything is experimental** (may change in a minor release, with a changelog no
 | Cleanup | `CONFIRM_WORD`, `confirmed`, `hasFlags`, `dryRun(categories, plan)`, `picked`, `changedSettings`, `summary` | experimental |
 | Settings file | `SETTINGS_FORMAT`, `buildExport(id, values, opts)`, `readImport(id, input, defs, current, { skip, requireModule, label, validators })`, `checkValue`, `preview`, `fileName` | experimental |
 | Update notes | `decide({ stored, current, knownWorld })`, `entriesBetween`, `buildNotice({ notes, always, from, to, on, ctx })`, `lintNotes` | experimental |
+| UI look | `UI_REVISION`, `UI_CLASSES`, `UI_STYLESHEET`, `TONES`, `tone`, `icon`, `badge`, `dot`, `statusLine`, `statusLines`, `navItem`; stylesheet `styles/wanderers-ui.css` (classes and tokens in [docs/ui.md](docs/ui.md)) | experimental |
 | Scene tab (pure) | `defineSection`, `orderSections`, `upsertSection`, `ownField`, `createRegistry`, `usableRegistry`, `claimRegistry`, constants `SCENE_TAB_GLOBAL` `SCENE_TAB_VERSION` `SCENE_TAB_ID` `SCENE_TAB_LABEL` `SCENE_TAB_ICON` | experimental |
 
 | Area | Exports (Foundry, `foundry/index.mjs`) | Status |
@@ -119,7 +125,7 @@ everything is experimental** (may change in a minor release, with a changelog no
 | Scene tab | `sceneTab.addSection(id, { title, order, render, onSubmit })`, `sceneTab.removeSection(id)`, `sceneTab.sections()` | experimental |
 
 Formats (versioned, see STABILITY.md): settings file `format` 1; socket envelopes `request` / `leader` / `hook`; release bundle
-`format` 1; lock file `lockVersion` 1; scene tab registry `version` 1.
+`format` 1; lock file `lockVersion` 1; scene tab registry `version` 1; shared stylesheet revision `UI_REVISION` 1 (`wc-r1`).
 
 Core fires **no hooks of its own**. `createLeader` fires only the hook names the module passes (`leaderHook`, `hooks`), all in the
 module's namespace.
@@ -202,6 +208,28 @@ Hooks.once("init", () => {
   deliberate global (see [Namespacing](#namespacing)).
 - `sceneTab.sections()` lists the registered sections (for health checks); `sceneTab.removeSection(id)` drops one.
 
+## Shared UI look
+
+`styles/wanderers-ui.css` (vendored at `vendor/wanderers-core/styles/wanderers-ui.css`) gives every module's windows one look that
+matches Foundry v14: built only on Foundry's own variables (`--color-level-*`, `--color-text-*`, `--font-*`), light and dark themes,
+status tokens `--wc-ok/-warn/-bad/-info/-off` (+ `-bg`), and components: badge, dot (with pending and live pulses), status line,
+stat tile, panel, banner, alert, chips, section label, timeline rows, table, sidebar nav, page head, focus styles and a narrow layout.
+The helpers in `index.mjs` (`badge`, `icon`, `dot`, `statusLine`, `statusLines`, `navItem`) write the same markup, escaped.
+
+```json
+"styles": ["vendor/wanderers-core/styles/wanderers-ui.css", "styles/my-module.css"]
+```
+
+```js
+import { UI_CLASSES, badge } from "../vendor/wanderers-core/index.mjs";
+static DEFAULT_OPTIONS = { classes: ["my-window", ...UI_CLASSES] };   // "wc-ui wc-r1"
+```
+
+**Opt-in and version-safe**: every rule is scoped under `.wc-ui.wc-r<revision>`, tokens live on that root, there are no `:root`,
+`html` or bare element rules, and keyframe and container names carry the revision. A module on an older core keeps its windows'
+revision class, so another module's newer stylesheet never restyles them. Any change to the file bumps `UI_REVISION` (a test
+compares the file with a hash per revision). Class list, tokens, markup and adoption steps: [docs/ui.md](docs/ui.md).
+
 ## Vendor tool
 
 `tools/vendor.mjs` (copied into each module as `vendor/wanderers-core/vendor.mjs`); Node 22, no packages.
@@ -235,12 +263,14 @@ Two modules may bundle different core versions in one world. Core is safe for th
 - **No shared socket channel.** `createLeader` uses `module.<host id>`; each module elects its own leader, with its own request kinds.
 - **No shared hooks.** Broadcast hooks must start with `<host id>.`; a hook name from another module is refused.
 - **No shared browser storage.** Core doesn't use localStorage or sessionStorage.
+- **No shared page styles.** The shared stylesheet styles only elements inside a `.wc-ui.wc-r<N>` root the module put there itself,
+  and each revision has its own class.
 
 ## What is deliberately not in core
 
 | Left out | Why |
 |---|---|
-| Control panel and other windows (ApplicationV2 HTML) | Each module's look and tabs differ; UI changes often and can't be tested in Node. The one exception is the shared Scene Configuration tab, which only works if it is shared. |
+| Control panel and other windows (ApplicationV2 classes, pages, wording) | Each module's pages and tabs differ; windows can't be tested in Node. Core shares only the look (stylesheet, tokens, small markup helpers) and the Scene Configuration tab, which only works if it is shared. |
 | Cleanup window, update-notes chat card, settings import preview | Wording and categories are per module; core gives the pure parts (plan, dry run, confirm word, notice, file format). |
 | Hub registry and update check over the network | Only the hub module needs them; the CORS workaround is specific to it. |
 | Permission checks, scene checks, game rules | Module-specific; rules text stays SRD-only in the modules that need it. |

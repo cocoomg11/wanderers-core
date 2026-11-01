@@ -10,7 +10,11 @@ installed in Foundry). Public repo, MIT. Read CONVENTIONS.md (house practices) a
   (`CORE_VERSION`, semver compare, release tags), `records.mjs` (`addCapped`, `capList`, `versioned`), `features-model.mjs`,
   `settings-model.mjs`, `leader-model.mjs` (election rules, `seenCache`, request ids), `socket-model.mjs` (`defineRequests`,
   `readRequest`, `makeRequest`), `health-model.mjs` (`healthCollector`), `cleanup-model.mjs`, `settings-io-model.mjs`,
-  `notes-model.mjs`, `rate-model.mjs` (`rateLimiter`), `scene-tab-model.mjs` (shared scene tab registry and ordering).
+  `notes-model.mjs`, `rate-model.mjs` (`rateLimiter`), `scene-tab-model.mjs` (shared scene tab registry and ordering), `ui-model.mjs`
+  (`UI_REVISION`, `UI_CLASSES`, `badge`/`icon`/`dot`/`statusLine`/`navItem` markup helpers).
+- `styles/wanderers-ui.css` the opt-in shared look (ships as `vendor/wanderers-core/styles/`; docs/ui.md). Scoped under
+  `.wc-ui.wc-r<UI_REVISION>`; any edit bumps `UI_REVISION` and the hash in `tests/ui.test.mjs`; only Foundry variables (checked live
+  on 14.369), hex only as var() fallbacks.
 - Foundry halves (thin, untested in Node): `foundry/leader.mjs` (`createLeader`), `foundry/module.mjs` (`createFeatures`,
   `createSettings`, `createLogger`, setting readers), `foundry/cleanup.mjs` (flag walk, unset, reset), `foundry/scene-tab.mjs`
   (`sceneTab`, the shared "Table Tools" tab via the `renderSceneConfig` hook).
@@ -18,7 +22,8 @@ installed in Foundry). Public repo, MIT. Read CONVENTIONS.md (house practices) a
 - `config/` shared `eslint.base.mjs`, `tsconfig.base.json`, `foundry-globals.d.ts` (shipped to modules).
 - `tests/*.test.mjs`; `foundry-fake.test.mjs` runs the Foundry halves against a fake `game` (wiring only, not Foundry).
 - `.github/workflows/`: `test.yml`, `release.yml`, `module-checks.yml` (reusable, called by modules). `.github/dependabot.yml`.
-- Docs: README (Public API, quick start), CONVENTIONS.md, STABILITY.md, CHANGELOG.md, `docs/module-ci.md`, `docs/branch-protection.md`.
+- Docs: README (Public API, quick start), CONVENTIONS.md, STABILITY.md, CHANGELOG.md, `docs/module-ci.md`, `docs/branch-protection.md`,
+  `docs/ui.md` (shared look: classes, tokens, markup, adoption).
 
 ## Key patterns
 - **Namespacing is a hard rule**: no globals (one exception: the scene tab registry `globalThis.__wanderersSceneTab`, versioned), no localStorage, no shared settings/flags/socket channels/hooks. Every Foundry-facing
@@ -27,6 +32,8 @@ installed in Foundry). Public repo, MIT. Read CONVENTIONS.md (house practices) a
   definitions (so module tests catch them); readers (`readRequest`, `readImport`, `versioned()` normalizers, health checks) never throw.
 - **Sender rights**: handlers get Foundry's sender user; payload fields like `userId` are refused by the schema, never trusted, and
   there is no fallback to them. Unknown senders are refused; hooks are accepted only from the leader's session of a GM user.
+- **Shared look is version-safe**: no `:root`/`html`/bare element rules, tokens on the root, revisioned keyframes/containers;
+  a stylesheet change is a new revision (never edit a shipped revision's rules in place). Tests in `tests/ui.test.mjs`.
 - **Keep core small.** Add only what at least two modules repeat and what has a stable shape. UI, wording and module rules stay in
   the modules (see README, What is deliberately not in core).
 - Every new export gets JSDoc types (checked by `tsc`), a test, a README Public API row (experimental first) and a CHANGELOG line.

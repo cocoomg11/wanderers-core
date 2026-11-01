@@ -68,6 +68,15 @@ disagree, the module's file wins for that module, and this file should be update
   whether the UI is showing) before any loop over scenes or tokens.
 - Windows have no backdrop blur (it costs a lot of FPS in v14).
 
+## Look
+
+- Windows use the shared look from core (`styles/wanderers-ui.css`, root classes `UI_CLASSES` on the window; docs/ui.md) once the
+  module has adopted it. Colours only from Foundry's variables or the `--wc-*` tokens; no hard-coded hex except var() fallbacks.
+- Status is an icon plus a word (or visible text), never a ✓ ⚠ ✗ character or colour alone. Animations respect
+  `prefers-reduced-motion`.
+- Module CSS stays scoped under the module's own window class; it may read `--wc-*` tokens but never restyles `.wc-*` classes
+  outside its own windows.
+
 ## Code
 
 - Pure logic lives in files with no Foundry calls at import time, so it runs and is tested in Node (`npm test` = `node --test`).

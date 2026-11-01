@@ -3,6 +3,45 @@
 All notable changes to wanderers-core. Versions follow [STABILITY.md](STABILITY.md). Modules pick up a release only when they update
 their pin.
 
+## 0.3.0 (2026-11-01)
+
+Everything stays experimental. Nothing changes for a module until it opts in: modules move with
+`node vendor/wanderers-core/vendor.mjs update 0.3.0` and their reusable workflow reference `module-checks.yml@v0.3.0`, then adopt the look
+per window (docs/ui.md).
+
+### Added
+
+- **Shared UI look**: `styles/wanderers-ui.css` (vendored at `vendor/wanderers-core/styles/wanderers-ui.css`; a module lists it in
+  `module.json` `styles`). Built only on Foundry's own variables (hex only as var() fallbacks), light and dark themes, status tokens
+  `--wc-ok/-warn/-bad/-info/-off` (+ `-bg`), accent, text, line and surface tokens. Components: badge, dot (pending ring and live pulse,
+  no motion with `prefers-reduced-motion`), status line, stat tiles, panel, banner (incl. live), alert, tag/filter and value chips,
+  section label, timeline rows, table, sidebar nav (groups, active link with accent background and 2 px bar, dot/badge slots,
+  footer), page head, buttons, focus styles, narrow-window container query. Revision 1 (`wc-r1`).
+- **Version-safe by design**: every rule under the opt-in root `.wc-ui.wc-r<N>`, tokens on that root, no `:root`/`html`/bare element
+  rules, revisioned keyframe and container names; any stylesheet change bumps `UI_REVISION`. Rules in STABILITY.md and docs/ui.md.
+- Markup helpers in `index.mjs` (`ui-model.mjs`): `UI_REVISION`, `UI_CLASSES`, `UI_STYLESHEET`, `TONES`, `tone`, `icon` (screen-reader
+  word, no status characters), `badge`, `dot`, `statusLine`, `statusLines`, `navItem`; every value escaped with `esc`.
+- Tests: scoping of every rule, no hard-coded colours, revision names, a stylesheet hash per revision, the bundle and an install
+  shipping the stylesheet, and every helper's markup and escaping.
+- docs/ui.md (classes, tokens, markup, adoption steps); README *Shared UI look*; CONVENTIONS *Look*.
+
+### Untested in Foundry
+
+Run in a live v14 world (and v13 where noted) once a module has adopted 0.3.0:
+
+- [ ] `module.json` `styles` entry `vendor/wanderers-core/styles/wanderers-ui.css` loads from the module zip (no 404 in the console).
+- [ ] A window with `UI_CLASSES` in its `classes`: tokens resolve (badges, dots, banners coloured) in the dark and the light theme,
+      and with the window's own `.theme-dark` / `.theme-light` override; error red readable in dark, status colours readable on light.
+- [ ] Nothing changes on Foundry's own windows or on a module window without the root classes.
+- [ ] Two modules on different core versions (one with `wc-r1`, a later one with `wc-r2`): each window keeps its own look.
+- [ ] Sidebar shell: no content padding, active link has the accent background and 2 px bar; at 720 px wide or less the sidebar becomes
+      a wrapping strip (container query on `.window-content`); `wc-cols` stacks.
+- [ ] Pending and live dots pulse, and stop with the OS "reduce motion" setting.
+- [ ] Focus outline on buttons, chips and nav links with the keyboard only; Foundry's own `button` styling under `wc-btn` still looks
+      native; `button.wc-chip` doesn't take Foundry's full button size.
+- [ ] Chat card wrapped in a `div` with `UI_CLASSES` picks up badges and status lines.
+- [ ] v13: the variables used exist (or the fallbacks look acceptable).
+
 ## 0.2.0 (2026-11-01)
 
 Everything stays experimental. Modules move to it with `node vendor/wanderers-core/vendor.mjs update 0.2.0` and their reusable
