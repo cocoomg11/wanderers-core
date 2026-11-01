@@ -32,7 +32,7 @@ installed in Foundry). Public repo, MIT. Read CONVENTIONS.md (house practices) a
 - Docs: README (Public API, quick start), CONVENTIONS.md, STABILITY.md, CHANGELOG.md, `docs/module-ci.md`, `docs/branch-protection.md`,
   `docs/ui.md` (shared look: classes, tokens, markup, adoption), `docs/windows.md` (remembered placement, open keybindings), `docs/data-folder.md` (Module data folder),
   `docs/store.md` (GM-only store, per-module adoption), `docs/testing.md` (fakes), `docs/upgrading-0.5.md` (0.3.x → 0.5.0 for every module).
-- Dev-only alert: minimatch (via eslint) GHSA-g3hv-75wg-m249 needs an npm `overrides` + lockfile regen with registry access (README Development).
+- Dev-only override: `overrides.minimatch` 11.0.3 in package.json for GHSA-g3hv-75wg-m249 (via eslint); drop it once eslint's range includes the fix (README Development).
 
 ## Key patterns
 - **Namespacing is a hard rule**: no globals (one exception: the scene tab registry `globalThis.__wanderersSceneTab`, versioned), no localStorage, no shared settings/flags/socket channels/hooks. Every Foundry-facing

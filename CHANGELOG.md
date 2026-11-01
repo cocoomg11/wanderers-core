@@ -3,6 +3,14 @@
 All notable changes to wanderers-core. Versions follow [STABILITY.md](STABILITY.md). Modules pick up a release only when they update
 their pin.
 
+## Unreleased
+
+### Security
+
+- Dev dependencies only (nothing ships to Foundry): `package.json` overrides `minimatch` to 11.0.3, which clears Dependabot's
+  moderate alert (GHSA-g3hv-75wg-m249) that came through `eslint` and `@eslint/config-array`. Lockfile regenerated; `npm audit` is
+  clean and `npm run ci` passes. No change to the library or the bundle.
+
 ## 0.5.0 (2026-11-01)
 
 The release every module moves to in one step (from 0.3.x straight to 0.5.0; it contains 0.4.0): health lines keep a `fix`, a shared

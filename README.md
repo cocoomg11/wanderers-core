@@ -362,19 +362,10 @@ npm test          # node --test
 npm run bundle    # dist/wanderers-core-X.Y.Z.json
 ```
 
-**Open dev-only alert (0.5.0): minimatch.** Dependabot's moderate alert for `minimatch` (GHSA-g3hv-75wg-m249, fixed in 11.0.1) comes
-through `eslint` and `@eslint/config-array`, which still ask for `^10.2.x` (eslint 10.14.0 too), so a plain version bump doesn't clear
-it. It only affects the lint step (nothing ships to Foundry). On a machine with npm registry access, from the core checkout:
-
-```sh
-npm pkg set overrides.minimatch=11.0.3
-npm install --package-lock-only --ignore-scripts
-npm ci && npm run ci          # lint must still pass with minimatch 11 under eslint
-git add package.json package-lock.json && git commit -m "Dev tools: minimatch 11.0.3 override (GHSA-g3hv-75wg-m249)"
-```
-
-If `npm run lint` fails with minimatch 11, undo (`npm pkg delete overrides`, `git checkout package-lock.json`) and dismiss the alert
-as "tolerable risk, dev only" until eslint takes minimatch 11. Drop the override once eslint's own range includes the fix.
+**Dev-only override: minimatch.** `package.json` pins `overrides.minimatch` to 11.0.3 for Dependabot's moderate alert
+(GHSA-g3hv-75wg-m249, fixed in 11.0.1). It comes through `eslint` and `@eslint/config-array`, which still ask for `^10.2.x`
+(eslint 10.14.0 too), and only affects the lint step (nothing ships to Foundry). Lint passes with minimatch 11. Drop the override
+(`npm pkg delete overrides`, then `npm install --package-lock-only --ignore-scripts`) once eslint's own range includes the fix.
 
 Releases: bump `version` in `package.json` (and `package-lock.json`) and `CORE_VERSION` in `src/version.mjs`, add a CHANGELOG
 section, push. The user publishes a GitHub release tagged `vX.Y.Z`; the Release workflow checks and builds the bundle in a read-only
