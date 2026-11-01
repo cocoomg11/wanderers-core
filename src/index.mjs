@@ -25,6 +25,8 @@ export {
   createRegistry, usableRegistry, claimRegistry
 } from "./scene-tab-model.mjs";
 export { UI_REVISION, UI_CLASSES, UI_STYLESHEET, TONES, tone, icon, badge, dot, statusLine, statusLines, navItem } from "./ui-model.mjs";
+export { QUALITIES, QUALITY_KEYS, quality, qualityLabel, itemSlot } from "./quality-model.mjs";
+export { COIN_RATIO, toCopper, fromCopper, formatCoins, coins } from "./coins-model.mjs";
 export {
   PLACEMENT_SETTING, PLACEMENT_VERSION, PLACEMENT_MAX, PLACEMENT_SAVE_MS, PLACEMENT_MIN_SIZE, WINDOW_KEY_RE, isWindowKey, readPlacement,
   readPlacements, getPlacement, setPlacement, removePlacement, samePlacement, clampPlacement, placementOf, debouncer

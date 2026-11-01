@@ -6,8 +6,9 @@ their pin.
 ## 0.4.0 (2026-11-01)
 
 Two opt-in window helpers; everything stays experimental. Nothing changes for a module until it uses them: move with
-`node vendor/wanderers-core/vendor.mjs update 0.4.0` (and `module-checks.yml@v0.4.0`). The stylesheet is unchanged (`UI_REVISION` 2).
-Guide: [docs/windows.md](docs/windows.md).
+`node vendor/wanderers-core/vendor.mjs update 0.4.0` (and `module-checks.yml@v0.4.0`). Also item quality colours and coin helpers, which change the stylesheet (`UI_REVISION` 3, `wc-r3`; modules pick it up with the vendor
+update, and windows built with `UI_CLASSES` move from `wc-r2` to `wc-r3` automatically; a module that hard-codes `wc-r2` must change it).
+Guides: [docs/windows.md](docs/windows.md), [docs/ui.md](docs/ui.md).
 
 ### Added
 
@@ -25,7 +26,17 @@ Guide: [docs/windows.md](docs/windows.md).
   half) over `game.keybindings.register`; no key by default; `gmOnly` → `restricted` and a GM check in `onDown`; errors in `onDown`
   are logged, never thrown. Pure `defineOpenKeybinding` (throws on bad definitions), `keybindingConfig`, `KEY_MODIFIERS`, `ACTION_RE`,
   `KEY_CODE_RE`.
-- Tests: `tests/window.test.mjs` (models, plus the mixin and keybinding wiring against a fake ApplicationV2 and `game`).
+- **Item quality** (`quality-model.mjs`): `QUALITIES`, `QUALITY_KEYS`, `quality(rarity)` (dnd5e rarity → poor / common / uncommon / rare /
+  epic / legendary / artifact; `""` and `mundane` → poor, `veryRare` → epic, unknown → common), `qualityLabel`, `itemSlot({ img, quality,
+  rarity, name, count, size, cls })`. Stylesheet: tokens `--wc-q-poor` … `--wc-q-artifact` (darkened in the light theme, base colour
+  overridable with `--wc-qs-<quality>`), `data-quality` / `wc-q-<quality>`, `wc-q-text`, `wc-item-slot` (`wc-sm`, `wc-lg`, `wc-empty`,
+  `wc-slot-count`; quality border and soft glow).
+- **Coins** (`coins-model.mjs`): `formatCoins(amount, { style: "short" | "long", zero, ratio })` ("12g 46s 8c"), `toCopper`, `fromCopper`,
+  `coins(amount, { zero, ratio, cls })` (markup with CSS-drawn coin dots, no image files), `COIN_RATIO` 100. Amounts are whole copper; the
+  `ratio` (copper per silver and silver per gold) defaults to the three-coin economy of the Wayfarer's Toolkit (1 gold = 10000 copper),
+  so a module switching from its own formatter keeps its amounts. Stylesheet: `wc-coins`, `wc-coin`, `wc-coin-icon`.
+- `UI_REVISION` 3, `UI_CLASSES` `["wc-ui", "wc-r3"]`; revision 3's hash recorded in `tests/ui.test.mjs` (revisions 1 and 2 kept).
+- Tests: `tests/quality-coins.test.mjs`; `tests/window.test.mjs` (models, plus the mixin and keybinding wiring against a fake ApplicationV2 and `game`).
 
 ### Untested in Foundry
 
@@ -37,6 +48,11 @@ Guide: [docs/windows.md](docs/windows.md).
 - [ ] `_onPosition` fires for header drags and the resize handle in v13 and v14 (saves happen while dragging stops).
 - [ ] The setting is per user/browser (`scope: "client"`), not shown in Configure Settings; `resetPlacement(ID)` clears it.
 - [ ] A HandlebarsApplicationMixin window and a DocumentSheetV2 subclass with a key function both work.
+- [ ] A window with `UI_CLASSES` (`wc-r3`) in the dark and the light theme: the seven `--wc-q-*` colours are readable as `wc-q-text` names
+  (common is near-white in dark, mid grey in light) and as `wc-item-slot` borders with a soft glow; an empty slot is dashed.
+- [ ] A `wc-r2` window (module on 0.3.1) and a `wc-r3` window open together: each keeps its own look.
+- [ ] `coins(...)`: the gold, silver and copper dots show in both themes at the window's font size and line up with the number.
+- [ ] `quality(item.system.rarity)` on real dnd5e items (mundane, veryRare, artifact): the keys match the colours.
 - [ ] `registerOpenKeybinding` in `init`: the action shows under the module in Configure Controls with no key; assigning a key opens
   the window; a `gmOnly` action is hidden from and refused for players; an error in `onDown` only logs.
 

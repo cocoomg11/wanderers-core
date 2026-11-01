@@ -11,7 +11,8 @@ installed in Foundry). Public repo, MIT. Read CONVENTIONS.md (house practices) a
   `settings-model.mjs`, `leader-model.mjs` (election rules, `seenCache`, request ids), `socket-model.mjs` (`defineRequests`,
   `readRequest`, `makeRequest`), `health-model.mjs` (`healthCollector`), `cleanup-model.mjs`, `settings-io-model.mjs`,
   `notes-model.mjs`, `rate-model.mjs` (`rateLimiter`), `scene-tab-model.mjs` (shared scene tab registry and ordering), `ui-model.mjs`
-  (`UI_REVISION`, `UI_CLASSES`, `badge`/`icon`/`dot`/`statusLine`/`navItem` markup helpers), `window-model.mjs` (placement store,
+  (`UI_REVISION`, `UI_CLASSES`, `badge`/`icon`/`dot`/`statusLine`/`navItem` markup helpers), `quality-model.mjs` (`QUALITIES`, `quality(rarity)`, `itemSlot`), `coins-model.mjs` (`formatCoins`/`toCopper`/`fromCopper`/`coins`;
+  whole copper, `ratio` default 100 = the toolkit's three-coin economy), `window-model.mjs` (placement store,
   `readPlacements`, `clampPlacement`, `debouncer`), `keybinding-model.mjs` (`defineOpenKeybinding`, `keybindingConfig`).
 - `styles/wanderers-ui.css` the opt-in shared look (ships as `vendor/wanderers-core/styles/`; docs/ui.md). Scoped under
   `.wc-ui.wc-r<UI_REVISION>`; any edit bumps `UI_REVISION` and the hash in `tests/ui.test.mjs`; only Foundry variables (checked live

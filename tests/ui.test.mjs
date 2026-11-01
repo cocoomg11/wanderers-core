@@ -16,7 +16,8 @@ const ROOT = `.wc-ui.wc-r${UI_REVISION}`;
  */
 const REVISION_HASHES = {
   1: "16f473dfccab45973abae9ee5b9243911aa9eb28a4f92dc899f96200303b4efd",
-  2: "d03ac54c763bdce8e9e5b2c4203751747cd6e22f603a47b06e7386cfaf9223b2"
+  2: "d03ac54c763bdce8e9e5b2c4203751747cd6e22f603a47b06e7386cfaf9223b2",
+  3: "d6b4c30e4c4a061a17e48f5ef1ebf81f3634a1a7c23495e9380c1d7aed9bb4c4"
 };
 
 /** Selectors of every style rule (comments and at-rule preludes removed). */

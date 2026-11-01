@@ -48,8 +48,8 @@ that keep that safe (tests in `tests/ui.test.mjs` check each):
 - **Tokens are defined on the root**, not on `:root`, so they never leak into the page.
 - **The revision class** `wc-r<N>` (`UI_REVISION`) changes whenever the stylesheet changes (a test compares the file to a recorded
   hash per revision). A window built against revision 1 carries `wc-r1` and is styled only by a copy that defines revision 1; a newer
-  copy's `wc-r2` rules don't touch it. Two copies of the same revision are byte-identical, so loading both is harmless.
-- **Keyframes and container queries are named per revision** (`wc-r2-pulse`, `@container wc-r2`), so copies can't redefine each
+  copy's `wc-r3` rules don't touch it. Two copies of the same revision are byte-identical, so loading both is harmless.
+- **Keyframes and container queries are named per revision** (`wc-r3-pulse`, `@container wc-r3`), so copies can't redefine each
   other's.
 - Class names are additive: a new revision may add classes; within one revision nothing changes.
 
@@ -74,10 +74,11 @@ red is lightened in the dark theme (body theme or `.theme-dark` / `.theme-light`
 | `--wc-mono` | `--font-monospace` |
 | `--wc-radius` `--wc-radius-sm` | 6 px / 4 px |
 | `--wc-tone` | set by the tone classes; components read it |
+| `--wc-q-poor` `-common` `-uncommon` `-rare` `-epic` `-legendary` `-artifact` | item quality colours (grey, near-white, green, blue, purple, orange, gold). Tuned per theme: the light theme darkens each one (near-white common becomes a mid grey) so names stay readable on parchment. A module may set `--wc-qs-<quality>` on its window to change the base colour for both themes. From revision 3 |
 
 ## Classes
 
-**Root:** `wc-ui` + `wc-r2` (use `UI_CLASSES`). `wc-flush` on the root removes the window content's padding.
+**Root:** `wc-ui` + `wc-r3` (use `UI_CLASSES`). `wc-flush` on the root removes the window content's padding.
 
 **Tones** (on any component, or alone to colour text): `wc-ok`, `wc-warn`, `wc-bad`, `wc-info`, `wc-off`, `wc-pending`, `wc-live`,
 `wc-accent`, `wc-none`.
@@ -99,9 +100,12 @@ red is lightened in the dark theme (body theme or `.theme-dark` / `.theme-light`
 | Timeline | `ul.wc-timeline` › `li` (`wc-tl-note`, `wc-tl-new`) › `wc-tl-time`, `wc-tl-icon` + tone, `wc-tl-text`, `wc-tl-aside` |
 | Table | `wc-table-box` › `table.wc-table` |
 | Shell | `wc-shell` › `nav.wc-side` (`wc-side-head` group labels, `wc-nav` links with `.active` or `aria-current="page"`, `wc-nav-label`, `wc-muted`, `wc-side-foot`), `wc-main` (the page scrolls as a whole; its direct children keep their height, from revision 2) |
+| Item quality (rev. 3) | `data-quality="rare"` or `wc-q-<poor\|common\|uncommon\|rare\|epic\|legendary\|artifact>` on an element sets `--wc-q`; `wc-q-text` colours text with it (an item name) |
+| Item slot (rev. 3) | `wc-item-slot` (square, 40 px; `wc-sm` 28 px, `wc-lg` 56 px) › `img`, `wc-slot-count`; `wc-empty` is a dashed empty slot; a filled slot with a quality gets that border and a soft glow |
+| Coins (rev. 3) | `wc-coins` › `wc-coin wc-coin-gp\|sp\|cp` (`wc-zero` dims) › `wc-coin-icon` (a CSS-drawn dot, no image files), the number, `wc-sr` word |
 | Page head | `wc-pagehead` › `wc-pagehead-title` (h1/h2), `wc-pagehead-meta`; buttons after the title |
 | Focus | `wc-btn`, `wc-chip`, `wc-nav` show a 2 px accent outline on `:focus-visible` |
-| Narrow | at 720 px wide or less (`@container wc-r2`): the sidebar becomes a wrapping strip, `wc-cols` one column, timeline rows fold |
+| Narrow | at 720 px wide or less (`@container wc-r3`): the sidebar becomes a wrapping strip, `wc-cols` one column, timeline rows fold |
 
 ## Markup examples
 
@@ -148,6 +152,15 @@ red is lightened in the dark theme (body theme or `.theme-dark` / `.theme-light`
 </div>
 ```
 
+```html
+<span class="wc-item-slot" data-quality="epic" title="Ring"><img src="icons/ring.webp" alt="Ring"><span class="wc-sr">Epic</span><span class="wc-slot-count">3</span></span>
+<span class="wc-q-text wc-q-rare">Staff</span>
+<span class="wc-coins" title="12 gold, 46 silver, 8 copper"><span class="wc-coin wc-coin-gp"><span class="wc-coin-icon" aria-hidden="true"></span>12<span class="wc-sr">gold</span></span> …</span>
+```
+
+Colour never carries the quality alone: `itemSlot` adds the quality word for screen readers, and a module should print the name or
+label next to a coloured name where it matters.
+
 ## JS helpers
 
 From `vendor/wanderers-core/index.mjs`, pure and tested in Node. Every value is escaped; status is an icon plus a screen-reader word
@@ -155,7 +168,7 @@ From `vendor/wanderers-core/index.mjs`, pure and tested in Node. Every value is 
 
 | Helper | Returns |
 |---|---|
-| `UI_REVISION`, `UI_CLASSES`, `UI_STYLESHEET` | `2`, `["wc-ui", "wc-r2"]`, `"styles/wanderers-ui.css"` |
+| `UI_REVISION`, `UI_CLASSES`, `UI_STYLESHEET` | `3`, `["wc-ui", "wc-r3"]`, `"styles/wanderers-ui.css"` |
 | `TONES` | frozen `{ ok, warn, bad, info, off, pending, live, accent, none }` → `{ icon, word }` (Font Awesome classes, screen-reader word) |
 | `tone(t)` | a tone name; health levels and aliases through `level` ("error" → "bad"); unknown → "info" |
 | `icon(t, { word })` | `<i class="… wc-icon wc-<t>" aria-hidden="true"></i><span class="wc-sr">Word:</span>`; `word: false` drops the word |
@@ -164,3 +177,12 @@ From `vendor/wanderers-core/index.mjs`, pure and tested in Node. Every value is 
 | `statusLine(t, text, { tag, html })` | `<li class="wc-status wc-<t>">` icon + text (`tag: "p"` / `"div"`; `html` is trusted markup only) |
 | `statusLines(lines)` | `<ul class="wc-lines">` from health-report lines `{ level, text }` |
 | `navItem({ label, action, page, icon, dot, badge, active, muted, aria, tabindex, data })` | a `button.wc-nav` for ApplicationV2 `actions` (`data-action`, default `nav`) |
+| `QUALITIES`, `QUALITY_KEYS` | frozen list `{ key, label, rarity }` lowest first (poor, common, uncommon, rare, epic, legendary, artifact), and the keys |
+| `quality(rarity)` | the quality key for a dnd5e rarity: `""` / `mundane` → poor, `common`, `uncommon`, `rare`, `veryRare` → epic, `legendary`, `artifact`. Case and spaces ignored; unknown → `common`; never throws |
+| `qualityLabel(q)` | "Epic" for `epic` or `veryRare` |
+| `itemSlot({ img, quality, rarity, name, count, size, cls })` | a `span.wc-item-slot` (empty without `img`); `size` `"sm"` / `"lg"`; the quality word is added for screen readers |
+| `formatCoins(amount, { style, zero, ratio })` | `12g 46s 8c` (`style: "short"`, default) or `12 gold, 46 silver, 8 copper` (`"long"`). `amount` is copper or `{ gp, sp, cp }`. Zero parts left out unless `zero: true`; nothing reads `0c` |
+| `toCopper({ gp, sp, cp }, { ratio })`, `fromCopper(copper, { ratio })` | whole copper ↔ `{ gp, sp, cp }`. `ratio` is the copper per silver and silver per gold, default `COIN_RATIO` 100 (1 gold = 10000 copper); 10 for a 10-to-1 economy. Negative or bad input reads as 0 |
+| `coins(amount, { zero, ratio, cls })` | `span.wc-coins` with a CSS-drawn coin dot, the number and a screen-reader word per part |
+
+Amounts are whole copper, the smallest coin; platinum and electrum are not handled (fold them into gold and silver first).
