@@ -300,7 +300,7 @@ export async function main(argv) {
     const lock = readLock(lockFile);
     if (!lock) fail(`no lock file at ${relative(root, lockFile)}`);
     const l = /** @type {Lock} */ (lock);
-    const tree = readTree(resolve(root, l.dir || dir));
+    const tree = readTree(resolve(root, o.dir ? dir : l.dir || dir));
     /** @type {FileMap | undefined} */ let expected;
     const remote = o.remote === true || o.remote === "true";
     if (remote) {

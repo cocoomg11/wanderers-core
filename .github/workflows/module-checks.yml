@@ -1,0 +1,75 @@
+name: Module checks (reusable)
+
+# Called from a module's own workflow; see docs/module-ci.md. Fails when the vendored core differs from the pin, then runs the
+# module's syntax check, lint, type check and tests. Each step can be switched off with an input while a module migrates.
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        type: string
+        default: "22"
+      core-dir:
+        description: Vendored folder (relative to the module root)
+        type: string
+        default: vendor/wanderers-core
+      core-lock:
+        description: Lock file
+        type: string
+        default: wanderers-core.lock.json
+      remote:
+        description: Also check the lock against the published core release (needs network; a local pin only warns)
+        type: boolean
+        default: true
+      lint:
+        type: boolean
+        default: true
+      types:
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Core pin, lint, types and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node-version }}
+      # The checker comes from core itself at the pinned tag, not from the module's vendored copy, so an edited vendored
+      # vendor.mjs can't approve itself. A local (unreleased) pin has no tag yet: its own copy checks it, with a warning.
+      - name: Read the pin
+        id: pin
+        run: |
+          test -f "${{ inputs.core-lock }}" || { echo "::error title=wanderers-core::no ${{ inputs.core-lock }} in this module"; exit 1; }
+          echo "version=$(jq -r .version '${{ inputs.core-lock }}')" >> "$GITHUB_OUTPUT"
+          echo "source=$(jq -r .source '${{ inputs.core-lock }}')" >> "$GITHUB_OUTPUT"
+      - name: Fetch core's checker at the pinned version
+        if: steps.pin.outputs.source == 'release'
+        uses: actions/checkout@v7
+        with:
+          repository: cocoomg11/wanderers-core
+          ref: v${{ steps.pin.outputs.version }}
+          path: .wanderers-core-checker
+          persist-credentials: false
+      - name: Vendored wanderers-core matches its pin
+        run: |
+          TOOL="${{ inputs.core-dir }}/vendor.mjs"
+          if [ "${{ steps.pin.outputs.source }}" = "release" ]; then TOOL=".wanderers-core-checker/tools/vendor.mjs"; fi
+          node "$TOOL" verify --dir "${{ inputs.core-dir }}" --lock "${{ inputs.core-lock }}" ${{ inputs.remote && '--remote' || '' }}
+          rm -rf .wanderers-core-checker
+      - name: Install dev tools
+        run: if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; elif [ -f package.json ]; then npm install --no-audit --no-fund; fi
+      - name: Syntax check
+        run: npm run check
+      - name: ESLint
+        if: inputs.lint
+        run: npm run lint
+      - name: JSDoc type check
+        if: inputs.types
+        run: npm run types
+      - name: Unit tests
+        run: npm test

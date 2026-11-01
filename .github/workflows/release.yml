@@ -1,0 +1,81 @@
+name: Release
+
+# The user publishes a GitHub release with a tag vMAJOR.MINOR.PATCH (agents never tag or publish). This workflow checks the tag and
+# package.json agree, runs every check again, builds wanderers-core-X.Y.Z.json (every vendored file plus its content hash) and
+# uploads it with a .sha256 file. Modules fetch it by version with `vendor.mjs install X.Y.Z`.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the release tag format
+        if: github.event_name == 'release'
+        run: |
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error title=Bad release tag::Tag '$GITHUB_REF_NAME' is not vMAJOR.MINOR.PATCH (for example v0.1.0). Delete the release and tag, then publish again with a tag like v0.1.0."
+            exit 1
+          fi
+          echo "Release tag $GITHUB_REF_NAME OK"
+
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Tag matches package.json and CORE_VERSION
+        if: github.event_name == 'release'
+        run: |
+          V="${GITHUB_REF_NAME#v}"
+          P="$(jq -r .version package.json)"
+          C="$(sed -nE 's/^export const CORE_VERSION = "([^"]+)";/\1/p' src/version.mjs)"
+          if [ "$V" != "$P" ] || [ "$V" != "$C" ]; then
+            echo "::error title=Version mismatch::tag $V, package.json $P, CORE_VERSION $C. Bump both in a commit on main, then release again."
+            exit 1
+          fi
+          grep -q "^## $V" CHANGELOG.md || { echo "::error title=No changelog::CHANGELOG.md has no '## $V' section"; exit 1; }
+
+      - name: Checks
+        run: |
+          npm ci --no-audit --no-fund
+          npm run check
+          npm run lint
+          npm run types
+          npm test
+
+      - name: Build the bundle
+        run: |
+          node tools/vendor.mjs bundle --out dist
+          ls -l dist
+          V="$(jq -r .version package.json)"
+          echo "::notice title=wanderers-core $V::$(cat dist/wanderers-core-$V.json.sha256)"
+
+      - name: Upload release assets
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V="${GITHUB_REF_NAME#v}"
+          gh release upload "$GITHUB_REF_NAME" "dist/wanderers-core-$V.json" "dist/wanderers-core-$V.json.sha256" --clobber
+
+      - name: Check the published asset downloads and verifies
+        if: github.event_name == 'release'
+        run: |
+          V="${GITHUB_REF_NAME#v}"
+          mkdir -p /tmp/mod && cd /tmp/mod
+          for i in 1 2 3 4 5; do node "$GITHUB_WORKSPACE/tools/vendor.mjs" install "$V" --repo "$GITHUB_REPOSITORY" && break; sleep 10; done
+          node vendor/wanderers-core/vendor.mjs verify --remote --repo "$GITHUB_REPOSITORY"
+
+      - name: Keep the bundle as a workflow artifact (manual runs)
+        if: github.event_name != 'release'
+        uses: actions/upload-artifact@v7
+        with:
+          name: wanderers-core-bundle
+          path: dist/

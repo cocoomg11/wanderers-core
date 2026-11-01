@@ -1,0 +1,36 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Lint, types and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install the pinned dev tools (eslint, typescript)
+        run: npm ci --no-audit --no-fund
+      - name: Syntax check
+        run: npm run check
+      - name: ESLint
+        run: npm run lint
+      - name: JSDoc type check
+        run: npm run types
+      - name: Unit tests
+        run: npm test
+      - name: Release bundle builds and verifies
+        run: |
+          node tools/vendor.mjs bundle --out dist
+          mkdir -p /tmp/mod && cd /tmp/mod && node "$GITHUB_WORKSPACE/tools/vendor.mjs" install --from "$GITHUB_WORKSPACE" && node vendor/wanderers-core/vendor.mjs verify
