@@ -3,6 +3,44 @@
 All notable changes to wanderers-core. Versions follow [STABILITY.md](STABILITY.md). Modules pick up a release only when they update
 their pin.
 
+## 0.6.0 (2026-11-06)
+
+**Guest pages**: a host module's window (first user: the toolkit's character sheet) takes pages from other modules through the
+host's own API. Additive only (new pure exports; nothing changed, removed or renamed; no stylesheet change, so `UI_REVISION` stays
+4). A minor release because it adds a new contract for hosts and guests. Modules move with
+`node vendor/wanderers-core/vendor.mjs update 0.6.0` and need no code change unless they host or add pages.
+
+### Added
+
+- `src/pages-model.mjs` (pure, exported from `index.mjs`; all experimental; [docs/pages.md](docs/pages.md)):
+  - `createPageHost({ hostId, builtIn, onChange, max, warn })`: one registry per host window, owned by the host module (no global;
+    guests reach it only through the host's API). `register(def)` adds or replaces (same id) a guest page and returns `off()`
+    (`ok`, `reason`; an old `off()` never removes a newer registration); `unregister(id)`; `pages(ctx)` (built-ins plus visible
+    guests in order), `guests(ctx)`, `get(id)`, `has(id)`, `size()`. A mistake in the host's own built-ins throws; a guest's never
+    does (refused with a console warning). At most `PAGE_GUESTS_MAX` (20) guests per host; replacing an id at the cap works.
+    `onChange({ type, id })` after each change (a throw is logged); a `visible(ctx)` that throws hides the page (warned once).
+  - `readPageDef(def)` → `{ ok: true, page }` | `{ ok: false, reason }`, never throws: id `^[a-z0-9-]+\.[A-Za-z0-9_-]+$` (≤ 80),
+    label ≤ 40, hint ≤ 80, icon = one SVG path of drawing commands and numbers (≤ 2000) or Font Awesome classes
+    `^fa-[a-z]+( fa-[a-z0-9-]+)+$` (or `fa`), optional numeric order, `render` required, `visible` / `activate` optional functions.
+  - `orderPages(list)`: order (none last), built-ins before guests on a tie, then id.
+  - `renderGuest(page, ctx, { timeoutMs })` → `{ html }` | `{ element }` | `{ error }` (try/catch, time limit `PAGE_RENDER_MS` 5 s,
+    a frozen shallow copy of `ctx`; never rejects) and `activateGuest(page, ctx)` → `{ ok }` | `{ error }`. Duck-typed, so they are
+    pure too: no Foundry half was needed.
+  - Constants `PAGE_ID_RE`, `PAGE_ID_MAX`, `PAGE_LABEL_MAX`, `PAGE_HINT_MAX`, `PAGE_ICON_MAX`, `PAGE_PATH_RE`, `PAGE_FA_RE`,
+    `PAGE_GUESTS_MAX`, `PAGE_RENDER_MS`.
+- `docs/pages.md`: the host contract and the guest contract (HTML is inserted as is, so guests escape their own data; guests get no
+  write access to host data; the host shows one line when a render fails). Tests: `tests/v060-pages.test.mjs`.
+
+### Changed
+
+- `tests/v051.test.mjs` checks "0.5.1 or later" instead of a 0.5.x version.
+
+### Untested in Foundry
+
+- [ ] A host window (the toolkit's character sheet) with a guest page registered from another module: the bookmark shows in
+  order, the page renders, its `activate` wires listeners, and a render that throws shows one error line while the rest works.
+- [ ] Registering and unregistering while the host window is open re-renders it (the host's `onChange`).
+
 ## 0.5.2 (2026-11-01)
 
 An **heirloom** item quality and shared stylesheet revision 4 (`wc-r4`). Additive only, so a patch under STABILITY.md (new

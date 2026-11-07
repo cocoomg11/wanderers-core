@@ -14,7 +14,9 @@ installed in Foundry). Public repo, MIT. Read CONVENTIONS.md (house practices) a
   (`UI_REVISION`, `UI_CLASSES`, `badge`/`icon`/`dot`/`statusLine`/`navItem` markup helpers), `quality-model.mjs` (`QUALITIES`, `quality(rarity)`, `itemSlot`), `coins-model.mjs` (`formatCoins`/`toCopper`/`fromCopper`/`coins`;
   whole copper, `ratio` default 100 = the toolkit's three-coin economy), `window-model.mjs` (placement store,
   `readPlacements`, `clampPlacement`, `debouncer`), `keybinding-model.mjs` (`defineOpenKeybinding`, `keybindingConfig`), `data-folder-model.mjs` (`dataFolders`, `pickDataFolder`, `dataFolderPlan`, `folderEmptyAfter`, `dataFolderShown`, `dataFolderIds` (every data folder), `dataFolderMergePlan` (0.5.1)),
-  `store-model.mjs` (0.5.0: `defineStore`, finding by marker or data flag, creation data, key helpers, `storeDeletions`/`deletionKeys`, size guard).
+  `store-model.mjs` (0.5.0: `defineStore`, finding by marker or data flag, creation data, key helpers, `storeDeletions`/`deletionKeys`, size guard),
+  `pages-model.mjs` (0.6.0 guest pages: `readPageDef` (never throws), `orderPages`, `createPageHost` (registry owned by the host module, no global;
+  built-in mistakes throw, guest mistakes are refused with a reason; cap `PAGE_GUESTS_MAX` 20), `renderGuest` (try/catch + time limit → `{ html | element | error }`), `activateGuest`).
   `health-model.mjs` also reads a line's optional `fix` (`readFix`, `healthLine`, `storableReport`; same rules as the Satchel's reader).
 - `styles/wanderers-ui.css` the opt-in shared look (ships as `vendor/wanderers-core/styles/`; docs/ui.md). Scoped under
   `.wc-ui.wc-r<UI_REVISION>`; any edit bumps `UI_REVISION` and the hash in `tests/ui.test.mjs`; only Foundry variables (checked live
@@ -31,7 +33,7 @@ installed in Foundry). Public repo, MIT. Read CONVENTIONS.md (house practices) a
 - `.github/workflows/`: `test.yml`, `release.yml`, `module-checks.yml` (reusable, called by modules). `.github/dependabot.yml`.
 - Docs: README (Public API, quick start), CONVENTIONS.md, STABILITY.md, CHANGELOG.md, `docs/module-ci.md`, `docs/branch-protection.md`,
   `docs/ui.md` (shared look: classes, tokens, markup, adoption), `docs/windows.md` (remembered placement, open keybindings), `docs/data-folder.md` (Module data folder),
-  `docs/store.md` (GM-only store, per-module adoption), `docs/testing.md` (fakes), `docs/upgrading-0.5.md` (0.3.x → 0.5.0 for every module).
+  `docs/store.md` (GM-only store, per-module adoption), `docs/pages.md` (guest pages: host and guest contracts), `docs/testing.md` (fakes), `docs/upgrading-0.5.md` (0.3.x → 0.5.0 for every module).
 - Dev-only override: `overrides.minimatch` 11.0.3 in package.json for GHSA-g3hv-75wg-m249 (via eslint); drop it once eslint's range includes the fix (README Development).
 
 ## Key patterns

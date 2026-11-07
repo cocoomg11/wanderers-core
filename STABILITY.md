@@ -28,7 +28,9 @@ Each export is marked **stable** or **experimental** in the README *Public API* 
 
 While core is `0.x`, everything is experimental unless the README marks it stable, and a minor release (0.1 → 0.2) may break.
 As of 0.5.0 nothing is marked stable: every export, including the scene tab, rate limit, the shared UI look, window placement,
-keybindings, the GM-only store and the health fix field, is experimental.
+keybindings, the GM-only store and the health fix field, is experimental. The guest pages added in 0.6.0 (`createPageHost`,
+`readPageDef`, `orderPages`, `renderGuest`, `activateGuest` and the `PAGE_*` constants; the definition fields in docs/pages.md) are
+experimental too: the definition reader may still accept more (never less without a changelog note).
 From 1.0.0 the rules below are strict.
 
 ## What counts as breaking (needs a major version)

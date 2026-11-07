@@ -19,6 +19,7 @@ inside its own zip, so every module stays standalone. CI in each module fails wh
 - [Shared UI look](#shared-ui-look)
 - [Windows: placement and keybindings](#windows-placement-and-keybindings)
 - [GM-only store](#gm-only-store)
+- [Guest pages](docs/pages.md) (0.6.0: other modules' pages in a host's window)
 - [Testing with core's fakes](#testing-with-cores-fakes)
 - [Vendor tool](#vendor-tool)
 - [Namespacing](#namespacing)
@@ -26,7 +27,7 @@ inside its own zip, so every module stays standalone. CI in each module fails wh
 - [Development](#development)
 - Policies: [CONVENTIONS.md](CONVENTIONS.md) (house practices), [STABILITY.md](STABILITY.md) (semver, deprecation),
   [docs/module-ci.md](docs/module-ci.md), [docs/branch-protection.md](docs/branch-protection.md), [docs/ui.md](docs/ui.md),
-  [docs/windows.md](docs/windows.md), [docs/store.md](docs/store.md), [docs/testing.md](docs/testing.md),
+  [docs/windows.md](docs/windows.md), [docs/store.md](docs/store.md), [docs/pages.md](docs/pages.md), [docs/testing.md](docs/testing.md),
   [docs/upgrading-0.5.md](docs/upgrading-0.5.md) (moving from 0.3.x straight to 0.5.0)
 
 ## Using core in a module
@@ -136,6 +137,7 @@ everything is experimental** (may change in a minor release, with a changelog no
 | Scene tab (pure) | `defineSection`, `orderSections`, `upsertSection`, `ownField`, `createRegistry`, `usableRegistry`, `claimRegistry`, constants `SCENE_TAB_GLOBAL` `SCENE_TAB_VERSION` `SCENE_TAB_ID` `SCENE_TAB_LABEL` `SCENE_TAB_ICON` | experimental |
 | GM-only store (pure) | `defineStore(spec)`, `isStoreEntry`, `storeEntries`, `storeRawData`, `storeCreateData`, `needsFiling`, `storeKeys`, `storeGet`, `storeWith`, `storeWithKey`, `storeDeletions(prev, next, base, depth)`, `deletionKeys(paths, del)`, `storeSize`, constants `STORE_MAX_BYTES` `STORE_DELETE_DEPTH` `STORE_FILED_FLAG` ([docs/store.md](docs/store.md)) | experimental |
 | Module data folder (pure) | `dataFolders(folders)` (0.5.1), `pickDataFolder(folders)`, `dataFolderData()`, `dataFolderPlan({ folders, entry })`, `folderEmptyAfter(contentIds, removedIds)`, `dataFolderShown(answers)`, `dataFolderIds(folders, entries)` (every data folder since 0.5.1), `dataFolderMergePlan({ folders, entries, own })` (0.5.1), constants `DATA_FOLDER_NAME` `DATA_FOLDER_TYPE` `DATA_FOLDER_SORT` `SHOW_SETTING` ([docs/data-folder.md](docs/data-folder.md)) | experimental |
+| Guest pages (pure) | 0.6.0: `createPageHost({ hostId, builtIn, onChange, max, warn })` → `register(def)` (→ `off()` with `ok` / `reason`; never throws), `unregister(id)`, `pages(ctx)`, `guests(ctx)`, `get(id)`, `has(id)`, `size()`; `readPageDef(def)` → `{ ok, page \| reason }`, `orderPages(list)`, `renderGuest(page, ctx, { timeoutMs })` → `{ html \| element \| error }`, `activateGuest(page, ctx)`, constants `PAGE_ID_RE` `PAGE_ID_MAX` `PAGE_LABEL_MAX` `PAGE_HINT_MAX` `PAGE_ICON_MAX` `PAGE_PATH_RE` `PAGE_FA_RE` `PAGE_GUESTS_MAX` `PAGE_RENDER_MS`. The registry lives in the host module (one per host window, no global); guests reach it through the host's API ([docs/pages.md](docs/pages.md)) | experimental |
 
 | Area | Exports (Foundry, `foundry/index.mjs`) | Status |
 |---|---|---|
@@ -343,7 +345,7 @@ Two modules may bundle different core versions in one world. Core is safe for th
 
 | Left out | Why |
 |---|---|
-| Control panel and other windows (ApplicationV2 classes, pages, wording) | Each module's pages and tabs differ; windows can't be tested in Node. Core shares only the look (stylesheet, tokens, small markup helpers) and the Scene Configuration tab, which only works if it is shared. |
+| Control panel and other windows (ApplicationV2 classes, pages, wording) | Each module's pages and tabs differ; windows can't be tested in Node. Core shares only the look (stylesheet, tokens, small markup helpers), the Scene Configuration tab, which only works if it is shared, and (0.6.0) the pure guest-page registry a host window uses to take other modules' pages. |
 | Cleanup window, update-notes chat card, settings import preview | Wording and categories are per module; core gives the pure parts (plan, dry run, confirm word, notice, file format). |
 | Hub registry and update check over the network | Only the hub module needs them; the CORS workaround is specific to it. Core only keeps a health line's `fix` intact; running fixes is the hub's job. |
 | Permission checks, scene checks, game rules | Module-specific; rules text stays SRD-only in the modules that need it. |
